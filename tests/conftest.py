@@ -25,3 +25,8 @@ def run_test(test_string: str) -> int:
     ret_code = pytest.main(["-x", test_file_path])
     os.remove(test_file_path)
     return ret_code
+
+
+@pytest.fixture(scope="module")
+def vcr_config():
+    return {"record_mode": ["once"]}

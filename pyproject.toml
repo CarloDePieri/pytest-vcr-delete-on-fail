@@ -46,3 +46,7 @@ vcrpy-encrypt = "^0.9.1"
 [build-system]
 requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.plugins]
+[tool.poetry.plugins."pytest11"]
+"delete_vcr_on_fail" = "vcrpy_delete_on_fail.delete"

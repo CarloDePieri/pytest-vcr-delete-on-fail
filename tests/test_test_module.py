@@ -15,7 +15,6 @@ def get_test_string(passing: bool) -> str:
                 import requests
                 import vcr
                 
-                
                 class TestCollection:
                     def test_this(self):
                         with vcr.use_cassette("{cassette_file}"):
@@ -39,7 +38,6 @@ class TestTheTestModule:
         assert there_are_no_temp_file()
         assert os.path.isfile(cassette_file)
 
-    # Order is not deterministic, hence this double test with the dummy parametrization
     @pytest.mark.parametrize("dummy", [True, True])
     def test_should_ensure_that_no_cassette_are_there_at_the_start_of_a_test_a(self, dummy):
         """The test module should ensure that no cassette are there at the start of a test a."""
