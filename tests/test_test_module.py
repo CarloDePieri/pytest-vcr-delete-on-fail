@@ -1,4 +1,6 @@
 import os
+import shutil
+
 import pytest
 import requests
 import textwrap
@@ -45,3 +47,9 @@ class TestTheTestModule:
         assert not os.path.isfile(common_cassette)
         with vcr.use_cassette(f"{common_cassette}"):
             requests.get("https://github.com")
+
+    def test_should_be_able_to_create_file_in_subfolder(self):
+        """The test module should be able to create file in subfolder."""
+        run_test(get_test_string(True), "submodule")
+        assert os.path.isdir("tests/submodule")
+        shutil.rmtree("tests/submodule")

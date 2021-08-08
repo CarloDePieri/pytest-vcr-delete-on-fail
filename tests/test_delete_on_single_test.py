@@ -1,4 +1,5 @@
 import os
+import shutil
 import textwrap
 
 import pytest
@@ -138,3 +139,28 @@ class TestWhenDealingWithASingleTest:
         ret = run_test(test_string)
         assert ret == 1
         assert not os.path.isfile(custom_cassette)
+
+    def test_should_delete_the_cassette_even_with_nested_folders(self):
+        """When dealing with a single test should delete the cassette even with nested folders."""
+
+        test_string = textwrap.dedent("""
+                import pytest
+                import requests
+                    
+                @pytest.fixture(scope="module")
+                def vcr_config():
+                    return {"record_mode": ["once"]}
+                
+                @pytest.mark.vcr
+                @pytest.mark.delete_cassette_on_failure
+                def test_this():
+                    requests.get("https://github.com")
+                    assert False
+                """)
+        return_code = run_test(test_string, "submodule")
+        assert return_code == 1
+        cassette_folder = f"tests/submodule/cassettes/test_temp_{hash(test_string)}"
+        assert len(os.listdir(cassette_folder)) == 0
+        # teardown - clean the submodule folder
+        shutil.rmtree("tests/submodule")
+
