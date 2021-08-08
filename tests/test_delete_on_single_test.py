@@ -3,7 +3,7 @@ import textwrap
 
 import pytest
 
-from tests.conftest import run_test
+from tests.conftest import run_test, test_cassettes_folder
 
 
 @pytest.fixture
@@ -23,7 +23,6 @@ fail_on_call = (True, False, True)
 fail_on_teardown = (True, True, False)
 
 
-@pytest.mark.vcr
 @pytest.mark.xfail
 @pytest.mark.parametrize("setup,call,teardown",
                          [fail_on_setup, fail_on_call, fail_on_teardown], indirect=["setup", "teardown"])
@@ -35,6 +34,7 @@ def test_runner_report(setup, call, teardown):
 # NOTE: this must be run together with test_runner_report since it checks the recorded reports on THAT parametric test
 def test_check_runners(request):
     """The delete module should register single test reports when failing: CHECK"""
+
     def get_reports(description):
         name = f"test_runner_report[{description[0]}-{description[1]}-{description[2]}]"
         return list(filter(lambda t: t.name == name, request.session.items))[0].reports
@@ -53,25 +53,88 @@ def test_check_runners(request):
     assert failed_on_teardown["teardown"].skipped
 
 
+fail_on_call_test = textwrap.dedent("""
+        import pytest
+        import requests
+            
+        @pytest.fixture(scope="module")
+        def vcr_config():
+            return {"record_mode": ["once"]}
+        
+        @pytest.mark.vcr
+        @pytest.mark.delete_cassette_on_failure
+        def test_this():
+            requests.get("https://github.com")
+            assert False
+        """)
+fail_on_setup_test = textwrap.dedent("""
+        import pytest
+        import requests
+            
+        @pytest.fixture(scope="module")
+        def vcr_config():
+            return {"record_mode": ["once"]}
+            
+        @pytest.fixture
+        def setup():
+            requests.get("https://github.com")
+            assert False
+            yield
+        
+        @pytest.mark.vcr
+        @pytest.mark.delete_cassette_on_failure
+        def test_this(setup):
+            assert True
+        """)
+fail_on_teardown_test = textwrap.dedent("""
+        import pytest
+        import requests
+            
+        @pytest.fixture(scope="module")
+        def vcr_config():
+            return {"record_mode": ["once"]}
+            
+        @pytest.fixture
+        def teardown():
+            yield
+            requests.get("https://github.com")
+            assert False
+        
+        @pytest.mark.vcr
+        @pytest.mark.delete_cassette_on_failure
+        def test_this(teardown):
+            assert True
+        """)
+
+
 class TestWhenDealingWithASingleTest:
     """Test: When dealing with a single test..."""
 
-    def test_should_be_able_to_delete_the_cassette_on_test_call_fail(self):
-        """When dealing with a single test should be able to delete the cassette on test call fail."""
+    @pytest.mark.parametrize("test_string", [fail_on_setup_test, fail_on_call_test, fail_on_teardown_test])
+    def test_should_delete_the_cassette_when_failing(self, test_string):
+        """When dealing with a single test should delete the cassette when failing."""
+        ret = run_test(test_string)
+        assert ret == 1
+        cassette_folder = f"{test_cassettes_folder}/test_temp_{hash(test_string)}"
+        assert len(os.listdir(cassette_folder)) == 0
 
-        test_string = textwrap.dedent("""
+    def test_it_should_be_possible_to_express_a_custom_cassette_path(self):
+        """When dealing with a single test it should be possible to express a custom cassette path."""
+
+        custom_cassette = "tests/cassettes/custom.yaml"
+        test_string = textwrap.dedent(f"""
             import pytest
             import requests
-                
-            @pytest.fixture(scope="module")
-            def vcr_config():
-                return {"record_mode": ["once"]}
+            import vcr
             
-            @pytest.mark.vcr
-            def test_this():
-                requests.get("https://github.com")
+            my_vcr = vcr.VCR(record_mode="once")
+                
+            @pytest.mark.delete_cassette_on_failure(["{custom_cassette}"])
+            def test_this(vcr_delete_test_cassette_on_failure):
+                with my_vcr.use_cassette("{custom_cassette}"):
+                    requests.get("https://github.com")
                 assert False
             """)
         ret = run_test(test_string)
         assert ret == 1
-        assert len(os.listdir("tests/cassettes")) == 0
+        assert not os.path.isfile(custom_cassette)
