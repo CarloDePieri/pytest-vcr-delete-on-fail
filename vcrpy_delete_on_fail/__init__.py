@@ -1,1 +1,1 @@
-from delete import get_default_cassette_path
+from vcrpy_delete_on_fail.delete import get_default_cassette_path
