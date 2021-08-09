@@ -1,0 +1,1 @@
+from pytest_vcr_delete_on_fail.main import get_default_cassette_path

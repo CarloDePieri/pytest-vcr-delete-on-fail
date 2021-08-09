@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "vcrpy-delete-on-fail"
+name = "pytest_vcr_delete_on_fail"
 version = "0.0.1"
 description = ""
 
@@ -11,11 +11,11 @@ authors = [
 
 readme = 'README.md'
 
-repository = "https://github.com/CarloDePieri/todo"
-homepage = "https://github.com/CarloDePieri/todo"
+repository = "https://github.com/CarloDePieri/pytest_vcr_delete_on_fail"
+homepage = "https://github.com/CarloDePieri/pytest_vcr_delete_on_fail"
 
 packages = [
-  { include = "vcrpy_delete_on_fail" }
+  { include = "pytest_vcr_delete_on_fail" }
 ]
 
 keywords = ["pytest", "vcr", "testing", "vcrpy", "fail", "delete"]
@@ -32,11 +32,11 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
+pytest = "^6.2.2"
 
 [tool.poetry.dev-dependencies]
 requests = "^2.25.1"
 coveralls = "^3.0.1"
-pytest = "^6.2.2"
 pytest-cov = "^2.11.1"
 pytest-recording = "^0.11.0"
 pytest-sugar = "^0.9.4"
@@ -49,4 +49,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.plugins]
 [tool.poetry.plugins."pytest11"]
-"delete_vcr_on_fail" = "vcrpy_delete_on_fail.delete"
+"vcr_delete_on_fail" = "pytest_vcr_delete_on_fail.main"

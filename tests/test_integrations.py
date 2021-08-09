@@ -20,7 +20,7 @@ def test_it_can_integrate_with_vcrpy_encrypt_easily(enc_teardown):
     conftest_string = textwrap.dedent("""
                 import pytest
                 from vcrpy_encrypt import BaseEncryptedPersister
-                from vcrpy_delete_on_fail import get_default_cassette_path
+                from pytest_vcr_delete_on_fail import get_default_cassette_path
 
                 # Configure vcrpy_encrypt
                 class MyEncryptedPersister(BaseEncryptedPersister):

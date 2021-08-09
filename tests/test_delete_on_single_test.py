@@ -294,7 +294,7 @@ class TestWhenDealingWithASingleTest:
         test_string = textwrap.dedent("""
                 import pytest
                 import requests
-                from vcrpy_delete_on_fail import get_default_cassette_path
+                from pytest_vcr_delete_on_fail import get_default_cassette_path
 
                 @pytest.fixture(scope="module")
                 def vcr_config():
