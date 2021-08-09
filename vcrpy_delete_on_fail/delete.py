@@ -36,11 +36,18 @@ def delete_cassette(cassette_path: str):
         os.remove(cassette_path)
 
 
+def is_test_failed(item) -> bool:
+    """Check the reports and determine if a test has failed."""
+    return (item.reports["setup"] and item.reports["setup"].failed) or \
+           (item.reports["call"] and item.reports["call"].failed) or \
+           (item.reports["teardown"] and item.reports["teardown"].failed)
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_protocol(item, nextitem):
     yield
     mark = item.get_closest_marker("delete_cassette_on_failure")
-    if mark is not None:
+    if mark is not None and is_test_failed(item):
         if len(mark.args) == 0:
             # use default cassette path
             # TODO provide a way to have a custom function to determine the cassette path

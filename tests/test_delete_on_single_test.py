@@ -112,6 +112,27 @@ fail_on_teardown_test = textwrap.dedent("""
 class TestWhenDealingWithASingleTest:
     """Test: When dealing with a single test..."""
 
+    def test_should_not_delete_the_cassette_when_passing(self):
+        """When dealing with a single test should not delete the cassette when passing."""
+        test_string = textwrap.dedent("""
+                import pytest
+                import requests
+
+                @pytest.fixture(scope="module")
+                def vcr_config():
+                    return {"record_mode": ["once"]}
+
+                @pytest.mark.vcr
+                @pytest.mark.delete_cassette_on_failure
+                def test_this():
+                    requests.get("https://github.com")
+                    assert True
+                """)
+        ret = run_test(test_string)
+        assert ret == 0
+        cassette_folder = f"{test_cassettes_folder}/test_temp_{hash(test_string)}"
+        assert len(os.listdir(cassette_folder)) == 1
+
     @pytest.mark.parametrize("test_string", [fail_on_setup_test, fail_on_call_test, fail_on_teardown_test])
     def test_should_delete_the_cassette_when_failing(self, test_string):
         """When dealing with a single test should delete the cassette when failing."""
