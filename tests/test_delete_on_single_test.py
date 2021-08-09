@@ -143,7 +143,6 @@ class TestWhenDealingWithASingleTest:
 
     def test_it_should_be_possible_to_express_a_custom_cassette_path(self):
         """When dealing with a single test it should be possible to express a custom cassette path."""
-
         custom_cassette = "tests/cassettes/custom.yaml"
         test_string = textwrap.dedent(f"""
             import pytest
@@ -164,7 +163,6 @@ class TestWhenDealingWithASingleTest:
 
     def test_should_delete_the_cassette_even_with_nested_folders(self):
         """When dealing with a single test should delete the cassette even with nested folders."""
-
         test_string = textwrap.dedent("""
                 import pytest
                 import requests
@@ -216,6 +214,65 @@ class TestWhenDealingWithASingleTest:
                         requests.get("https://github.com")
                     with my_vcr.use_cassette(get_additional_cassette("c")):
                         requests.get("https://github.com")
+                    assert False
+                """)
+        return_code = run_test(test_string)
+        assert return_code == 1
+        cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
+        assert len(os.listdir(cassette_folder)) == 0
+
+    def test_the_marker_should_be_able_to_take_a_function_as_argument(self):
+        """When dealing with a single test the marker should be able to take a function as argument."""
+        test_string = textwrap.dedent("""
+                import os
+                import pytest
+                import requests
+                import vcr
+
+                @pytest.fixture(scope="module")
+                def vcr_config():
+                    return {"record_mode": ["once"]}
+
+                my_vcr = vcr.VCR(record_mode="once")
+
+                def get_additional_cassette(salt):
+                    file_name = os.path.basename(__file__).replace(".py", "")
+                    return f"tests/cassettes/{file_name}/additional_{salt}.yaml"
+
+                def get_cassette(node):
+                    file_name = node.parent.name.replace(".py", "")
+                    return f"tests/cassettes/{file_name}/additional_b.yaml"
+
+                @pytest.mark.vcr
+                @pytest.mark.delete_cassette_on_failure
+                @pytest.mark.delete_cassette_on_failure(get_additional_cassette("a"), get_cassette)
+                def test_this():
+                    requests.get("https://github.com")
+                    with my_vcr.use_cassette(get_additional_cassette("a")):
+                        requests.get("https://github.com")
+                    with my_vcr.use_cassette(get_additional_cassette("b")):
+                        requests.get("https://github.com")
+                    assert False
+                """)
+        return_code = run_test(test_string)
+        assert return_code == 1
+        cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
+        assert len(os.listdir(cassette_folder)) == 0
+
+    def test_it_should_delete_the_default_cassette_even_with_none_as_marker_argument(self):
+        """When dealing with a single test it should delete the default cassette even with None as marker argument."""
+        test_string = textwrap.dedent("""
+                import pytest
+                import requests
+
+                @pytest.fixture(scope="module")
+                def vcr_config():
+                    return {"record_mode": ["once"]}
+
+                @pytest.mark.vcr
+                @pytest.mark.delete_cassette_on_failure(None)
+                def test_this():
+                    requests.get("https://github.com")
                     assert False
                 """)
         return_code = run_test(test_string)

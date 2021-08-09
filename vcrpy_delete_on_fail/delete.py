@@ -57,7 +57,12 @@ def pytest_runtest_protocol(item, nextitem):
             else:
                 # some argument was specified
                 for cassette in mark.args:
-                    delete_cassette(cassette)
+                    if callable(cassette):
+                        cassette = cassette(item)
+                    if cassette is None:
+                        use_default_cassette = True
+                    else:
+                        delete_cassette(cassette)
         if use_default_cassette:
             test = item.location[2]
             test_file_path = item.location[0]
@@ -70,6 +75,7 @@ def pytest_configure(config):
     # register an additional marker
     config.addinivalue_line(
         "markers", "delete_cassette_on_failure(cassette_path): the cassettes to be deleted on test failure;" +
-                   " more cassettes can be added (as str arguments); if none is specified, the cassette will be" +
-                   " determined automatically. This marker can be used multiple times."
+                   " more cassettes can be added (as str arguments or as a callable(item) -> str where item is a" +
+                   " pytest nodes.Item object); if no argument is specified (or None is used as one), the cassette " +
+                   "will be determined automatically. This marker can be used multiple times."
     )
