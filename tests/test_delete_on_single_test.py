@@ -151,7 +151,7 @@ class TestWhenDealingWithASingleTest:
             
             my_vcr = vcr.VCR(record_mode="once")
                 
-            @pytest.mark.delete_cassette_on_failure("{custom_cassette}")
+            @pytest.mark.delete_cassette_on_failure(["{custom_cassette}"])
             def test_this(vcr_delete_test_cassette_on_failure):
                 with my_vcr.use_cassette("{custom_cassette}"):
                     requests.get("https://github.com")
@@ -204,8 +204,8 @@ class TestWhenDealingWithASingleTest:
 
                 @pytest.mark.vcr
                 @pytest.mark.delete_cassette_on_failure
-                @pytest.mark.delete_cassette_on_failure(get_additional_cassette("a"))
-                @pytest.mark.delete_cassette_on_failure(get_additional_cassette("b"), get_additional_cassette("c"))
+                @pytest.mark.delete_cassette_on_failure([get_additional_cassette("a")])
+                @pytest.mark.delete_cassette_on_failure([get_additional_cassette("b"), get_additional_cassette("c")])
                 def test_this():
                     requests.get("https://github.com")
                     with my_vcr.use_cassette(get_additional_cassette("a")):
@@ -244,8 +244,8 @@ class TestWhenDealingWithASingleTest:
                     return f"tests/cassettes/{file_name}/additional_b.yaml"
 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure
-                @pytest.mark.delete_cassette_on_failure(get_additional_cassette("a"), get_cassette)
+                @pytest.mark.delete_cassette_on_failure([get_additional_cassette("a"), get_cassette], 
+                                                        delete_default=True)
                 def test_this():
                     requests.get("https://github.com")
                     with my_vcr.use_cassette(get_additional_cassette("a")):
@@ -259,20 +259,29 @@ class TestWhenDealingWithASingleTest:
         cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
         assert len(os.listdir(cassette_folder)) == 0
 
-    def test_it_should_delete_the_default_cassette_even_with_none_as_marker_argument(self):
-        """When dealing with a single test it should delete the default cassette even with None as marker argument."""
+    def test_it_should_be_able_to_force_the_deletion_of_the_default_cassette(self):
+        """When dealing with a single test it should be able to force the deletion of the default cassette."""
         test_string = textwrap.dedent("""
+                import os
                 import pytest
                 import requests
+                import vcr
+
+                my_vcr = vcr.VCR(record_mode="once")
 
                 @pytest.fixture(scope="module")
                 def vcr_config():
                     return {"record_mode": ["once"]}
 
+                file_name = os.path.basename(__file__).replace(".py", "")
+                additional = f"tests/cassettes/{file_name}/additional.yaml"
+
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure(None)
+                @pytest.mark.delete_cassette_on_failure([additional], delete_default=True)
                 def test_this():
                     requests.get("https://github.com")
+                    with my_vcr.use_cassette(additional):
+                        requests.get("https://github.com")
                     assert False
                 """)
         return_code = run_test(test_string)
@@ -280,8 +289,8 @@ class TestWhenDealingWithASingleTest:
         cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
         assert len(os.listdir(cassette_folder)) == 0
 
-    def test_should_be_able_to_handle_only_a_function_as_marker_argument(self):
-        """When dealing with a single test should be able to handle only a function as marker argument."""
+    def test_should_be_able_to_handle_only_a_function_in_the_marker_argument_list(self):
+        """When dealing with a single test should be able to handle only a function in the marker argument list."""
         test_string = textwrap.dedent("""
                 import pytest
                 import requests
@@ -295,7 +304,7 @@ class TestWhenDealingWithASingleTest:
                     return get_default_cassette_path(item)
 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure.with_args(dummy)
+                @pytest.mark.delete_cassette_on_failure([dummy])
                 def test_this():
                     requests.get("https://github.com")
                     assert False
@@ -305,23 +314,23 @@ class TestWhenDealingWithASingleTest:
         cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
         assert len(os.listdir(cassette_folder)) == 0
 
-    def test_it_should_not_freak_out_with_an_invalid_function_argument_return(self):
-        """When dealing with a single test it should not freak out with an invalid function argument return."""
+    def test_it_should_not_freak_out_with_an_invalid_marker_function_return(self):
+        """When dealing with a single test it should not freak out with an invalid marker function return."""
         test_string = textwrap.dedent("""
                 import pytest
 
                 def broken(item):
                     return 1
 
-                @pytest.mark.delete_cassette_on_failure.with_args(broken)
+                @pytest.mark.delete_cassette_on_failure([broken])
                 def test_with_broken_func():
                     assert False
                 """)
         return_code = run_test(test_string)
         assert return_code == 1
 
-    def test_should_not_freak_out_if_the_provided_function_raise_exceptions(self):
-        """When dealing with a single test should not freak out if the provided function raise exceptions."""
+    def test_should_not_freak_out_if_a_provided_function_raise_exceptions(self):
+        """When dealing with a single test should not freak out if a provided function raise exceptions."""
         test_string = textwrap.dedent("""
                 import pytest
 
@@ -329,7 +338,7 @@ class TestWhenDealingWithASingleTest:
                     raise Exception
                     return 1
 
-                @pytest.mark.delete_cassette_on_failure.with_args(broken)
+                @pytest.mark.delete_cassette_on_failure([broken])
                 def test_with_broken_func():
                     assert False
                 """)

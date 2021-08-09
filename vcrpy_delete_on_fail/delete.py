@@ -58,20 +58,19 @@ def pytest_runtest_protocol(item, nextitem):
         # at least a marker was used and the test has failed
         use_default_cassette = False
         for mark in markers:
-            if len(mark.args) == 0:
-                # No argument was used on the marker, use the default cassette
+            if len(mark.args) == 0 or mark.kwargs.get("delete_default", False):
+                # No argument was used on the marker or the delete_default argument has been forced True:
+                # use the default cassette
                 use_default_cassette = True
-            else:
+            if len(mark.args) > 0:
                 # some argument was specified
-                for cassette in mark.args:
+                for cassette in mark.args[0]:
                     if callable(cassette):
                         try:
                             cassette = cassette(item)
                         except Exception:
                             pass
-                    if cassette is None:
-                        use_default_cassette = True
-                    elif isinstance(cassette, str):
+                    if isinstance(cassette, str):
                         delete_cassette(cassette)
         if use_default_cassette:
             cassette = get_default_cassette_path(item)
@@ -79,10 +78,9 @@ def pytest_runtest_protocol(item, nextitem):
 
 
 def pytest_configure(config):
-    # register an additional marker
     config.addinivalue_line(
-        "markers", "delete_cassette_on_failure(cassette_path): the cassettes to be deleted on test failure;" +
-                   " more cassettes can be added (as str arguments or as a callable(item) -> str where item is a" +
-                   " pytest nodes.Item object); if no argument is specified (or None is used as one), the cassette " +
-                   "will be determined automatically. This marker can be used multiple times."
+        "markers", "delete_cassette_on_failure(cassette_path_list): the cassettes to be deleted on test failure;" +
+                   " the list elements can be string or callable(item) -> str where item is a pytest nodes.Item" +
+                   " object); if no argument is specified (or the argument delete_default=True is used), the cassette" +
+                   " will be determined automatically. This marker can be used multiple times."
     )

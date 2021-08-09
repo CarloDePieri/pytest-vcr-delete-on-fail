@@ -46,8 +46,8 @@ def test_it_can_integrate_with_vcrpy_encrypt_easily(enc_teardown):
                     return f"{default}{MyEncryptedPersister.clear_text_suffix}"
 
                 # Define a shorthand for the delete_cassette_on_failure marker
-                vcr_delete_on_fail = pytest.mark.delete_cassette_on_failure(get_encrypted_cassette,
-                                                                            get_clear_text_cassette)
+                vcr_delete_on_fail = pytest.mark.delete_cassette_on_failure([get_encrypted_cassette,
+                                                                             get_clear_text_cassette])
                 """)
     folder = "tests/enc"
     if not os.path.isdir(folder):
