@@ -65,10 +65,13 @@ def pytest_runtest_protocol(item, nextitem):
                 # some argument was specified
                 for cassette in mark.args:
                     if callable(cassette):
-                        cassette = cassette(item)
+                        try:
+                            cassette = cassette(item)
+                        except Exception:
+                            pass
                     if cassette is None:
                         use_default_cassette = True
-                    else:
+                    elif isinstance(cassette, str):
                         delete_cassette(cassette)
         if use_default_cassette:
             cassette = get_default_cassette_path(item)

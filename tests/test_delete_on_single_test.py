@@ -279,3 +279,59 @@ class TestWhenDealingWithASingleTest:
         assert return_code == 1
         cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
         assert len(os.listdir(cassette_folder)) == 0
+
+    def test_should_be_able_to_handle_only_a_function_as_marker_argument(self):
+        """When dealing with a single test should be able to handle only a function as marker argument."""
+        test_string = textwrap.dedent("""
+                import pytest
+                import requests
+                from vcrpy_delete_on_fail import get_default_cassette_path
+
+                @pytest.fixture(scope="module")
+                def vcr_config():
+                    return {"record_mode": ["once"]}
+
+                def dummy(item):
+                    return get_default_cassette_path(item)
+
+                @pytest.mark.vcr
+                @pytest.mark.delete_cassette_on_failure.with_args(dummy)
+                def test_this():
+                    requests.get("https://github.com")
+                    assert False
+                """)
+        return_code = run_test(test_string)
+        assert return_code == 1
+        cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
+        assert len(os.listdir(cassette_folder)) == 0
+
+    def test_it_should_not_freak_out_with_an_invalid_function_argument_return(self):
+        """When dealing with a single test it should not freak out with an invalid function argument return."""
+        test_string = textwrap.dedent("""
+                import pytest
+
+                def broken(item):
+                    return 1
+
+                @pytest.mark.delete_cassette_on_failure.with_args(broken)
+                def test_with_broken_func():
+                    assert False
+                """)
+        return_code = run_test(test_string)
+        assert return_code == 1
+
+    def test_should_not_freak_out_if_the_provided_function_raise_exceptions(self):
+        """When dealing with a single test should not freak out if the provided function raise exceptions."""
+        test_string = textwrap.dedent("""
+                import pytest
+
+                def broken(item):
+                    raise Exception
+                    return 1
+
+                @pytest.mark.delete_cassette_on_failure.with_args(broken)
+                def test_with_broken_func():
+                    assert False
+                """)
+        return_code = run_test(test_string)
+        assert return_code == 1
