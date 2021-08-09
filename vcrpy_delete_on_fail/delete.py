@@ -21,7 +21,7 @@ def pytest_runtest_makereport(item, call):
     item.reports[rep.when] = rep
 
 
-def get_cassette_path(test_file_path: str) -> str:
+def get_cassette_folder_path(test_file_path: str) -> str:
     """Return the cassette path given the test file path."""
     return os.path.join(
         os.path.dirname(test_file_path),
@@ -29,9 +29,16 @@ def get_cassette_path(test_file_path: str) -> str:
         os.path.basename(test_file_path).replace(".py", ""))
 
 
+def get_default_cassette_path(item) -> str:
+    """Return the cassette full path given the test item."""
+    test = item.location[2]
+    test_file_path = item.location[0]
+    cassette_path = get_cassette_folder_path(test_file_path)
+    return f"{cassette_path}/{test}.yaml"
+
+
 def delete_cassette(cassette_path: str):
     """Delete the provided cassette from disk."""
-    # TODO support encrypted cassette
     if os.path.exists(cassette_path):
         os.remove(cassette_path)
 
@@ -64,10 +71,7 @@ def pytest_runtest_protocol(item, nextitem):
                     else:
                         delete_cassette(cassette)
         if use_default_cassette:
-            test = item.location[2]
-            test_file_path = item.location[0]
-            cassette_path = get_cassette_path(test_file_path)
-            cassette = f"{cassette_path}/{test}.yaml"
+            cassette = get_default_cassette_path(item)
             delete_cassette(cassette)
 
 
