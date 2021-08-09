@@ -29,6 +29,7 @@ def there_are_no_temp_file() -> bool:
     return len(list(filter(lambda f: f.startswith("test_temp"), os.listdir("tests")))) == 0
 
 
+@pytest.mark.usefixtures("clear_cassettes")
 class TestTheTestModule:
     """Test: The test module..."""
 

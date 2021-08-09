@@ -27,13 +27,13 @@ fail_on_teardown = (True, True, False)
 @pytest.mark.xfail
 @pytest.mark.parametrize("setup,call,teardown",
                          [fail_on_setup, fail_on_call, fail_on_teardown], indirect=["setup", "teardown"])
-def test_runner_report(setup, call, teardown):
+def test_runner_report(setup, call, teardown, clear_cassettes):
     """The delete module should register single test reports when failing: REGISTER"""
     assert call
 
 
 # NOTE: this must be run together with test_runner_report since it checks the recorded reports on THAT parametric test
-def test_check_runners(request):
+def test_check_runners(request, clear_cassettes):
     """The delete module should register single test reports when failing: CHECK"""
 
     def get_reports(description):
@@ -108,6 +108,7 @@ fail_on_teardown_test = textwrap.dedent("""
         """)
 
 
+@pytest.mark.usefixtures("clear_cassettes")
 class TestWhenDealingWithASingleTest:
     """Test: When dealing with a single test..."""
 
