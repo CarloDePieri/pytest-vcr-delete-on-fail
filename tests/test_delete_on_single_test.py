@@ -152,7 +152,7 @@ class TestWhenDealingWithASingleTest:
             
             my_vcr = vcr.VCR(record_mode="once")
                 
-            @pytest.mark.delete_cassette_on_failure(["{custom_cassette}"])
+            @pytest.mark.delete_cassette_on_failure("{custom_cassette}")
             def test_this(vcr_delete_test_cassette_on_failure):
                 with my_vcr.use_cassette("{custom_cassette}"):
                     requests.get("https://github.com")
@@ -186,3 +186,39 @@ class TestWhenDealingWithASingleTest:
         # teardown - clean the submodule folder
         shutil.rmtree("tests/submodule")
 
+    def test_should_manage_multiple_markers(self):
+        """When dealing with a single test should manage multiple markers."""
+        test_string = textwrap.dedent("""
+                import os
+                import pytest
+                import requests
+                import vcr
+
+                @pytest.fixture(scope="module")
+                def vcr_config():
+                    return {"record_mode": ["once"]}
+
+                my_vcr = vcr.VCR(record_mode="once")
+
+                def get_additional_cassette(salt):
+                    file_name = os.path.basename(__file__).replace(".py", "")
+                    return f"tests/cassettes/{file_name}/additional_{salt}.yaml"
+
+                @pytest.mark.vcr
+                @pytest.mark.delete_cassette_on_failure
+                @pytest.mark.delete_cassette_on_failure(get_additional_cassette("a"))
+                @pytest.mark.delete_cassette_on_failure(get_additional_cassette("b"), get_additional_cassette("c"))
+                def test_this():
+                    requests.get("https://github.com")
+                    with my_vcr.use_cassette(get_additional_cassette("a")):
+                        requests.get("https://github.com")
+                    with my_vcr.use_cassette(get_additional_cassette("b")):
+                        requests.get("https://github.com")
+                    with my_vcr.use_cassette(get_additional_cassette("c")):
+                        requests.get("https://github.com")
+                    assert False
+                """)
+        return_code = run_test(test_string)
+        assert return_code == 1
+        cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
+        assert len(os.listdir(cassette_folder)) == 0

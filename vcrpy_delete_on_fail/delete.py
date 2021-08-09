@@ -36,7 +36,7 @@ def delete_cassette(cassette_path: str):
         os.remove(cassette_path)
 
 
-def is_test_failed(item) -> bool:
+def test_failed(item) -> bool:
     """Check the reports and determine if a test has failed."""
     return (item.reports["setup"] and item.reports["setup"].failed) or \
            (item.reports["call"] and item.reports["call"].failed) or \
@@ -46,25 +46,30 @@ def is_test_failed(item) -> bool:
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_protocol(item, nextitem):
     yield
-    mark = item.get_closest_marker("delete_cassette_on_failure")
-    if mark is not None and is_test_failed(item):
-        if len(mark.args) == 0:
-            # use default cassette path
-            # TODO provide a way to have a custom function to determine the cassette path
+    markers = list(item.iter_markers("delete_cassette_on_failure"))
+    if len(markers) > 0 and test_failed(item):
+        # at least a marker was used and the test has failed
+        use_default_cassette = False
+        for mark in markers:
+            if len(mark.args) == 0:
+                # No argument was used on the marker, use the default cassette
+                use_default_cassette = True
+            else:
+                # some argument was specified
+                for cassette in mark.args:
+                    delete_cassette(cassette)
+        if use_default_cassette:
             test = item.location[2]
             test_file_path = item.location[0]
             cassette_path = get_cassette_path(test_file_path)
             cassette = f"{cassette_path}/{test}.yaml"
             delete_cassette(cassette)
-        else:
-            # custom path has been provided, delete those
-            for cassette in mark.args[0]:
-                delete_cassette(cassette)
 
 
 def pytest_configure(config):
     # register an additional marker
     config.addinivalue_line(
-        "markers", "delete_cassette_on_failure(custom_list): list of custom cassette to be deleted on test failure;" +
-                   "if custom_list is absent, will determine automatically the cassette path"
+        "markers", "delete_cassette_on_failure(cassette_path): the cassettes to be deleted on test failure;" +
+                   " more cassettes can be added (as str arguments); if none is specified, the cassette will be" +
+                   " determined automatically. This marker can be used multiple times."
     )
