@@ -344,3 +344,25 @@ class TestWhenDealingWithASingleTest:
                 """)
         return_code = run_test(test_string)
         assert return_code == 1
+
+    def test_it_should_not_delete_cassettes_if_skip_was_specified(self):
+        """When dealing with a single test it should not delete cassettes if skip was specified."""
+        test_string = textwrap.dedent("""
+                import pytest
+                import requests
+
+                @pytest.fixture(scope="module")
+                def vcr_config():
+                    return {"record_mode": ["once"]}
+
+                @pytest.mark.vcr
+                @pytest.mark.delete_cassette_on_failure
+                @pytest.mark.delete_cassette_on_failure(skip=True)
+                def test_with_broken_func():
+                    requests.get("https://github.com")
+                    assert False
+                """)
+        return_code = run_test(test_string)
+        assert return_code == 1
+        cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
+        assert len(os.listdir(cassette_folder)) == 1
