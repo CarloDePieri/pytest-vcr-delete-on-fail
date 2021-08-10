@@ -84,6 +84,7 @@ def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
         import pytest
         import requests
         import vcr
+        from typing import Union
 
         def get_setup_cassette_path(node) -> str:
             # determine the class setup cassette path from the node
@@ -99,11 +100,16 @@ def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
             setup_vcr = vcr.VCR(record_mode=["once"])
             with setup_vcr.use_cassette(cassette_path):
                 yield
+                
+        def get_class_setup_cassette_if_failed(node) -> Union[str, None]:
+            # check if the class has been flagged with a failed class setup
+            if node.cls.cls_setup_failed:
+                # return the class setup cassette path
+                return get_setup_cassette_path(node)
+            # otherwise return None
 
-        # this marker is from pytest_recording, will record requests from tests
         @pytest.mark.vcr
-        # the class setup cassette can be deleted by passing the same function used by vcr_setup
-        @pytest.mark.delete_cassette_on_failure([get_setup_cassette_path], delete_default=True)
+        @pytest.mark.delete_cassette_on_failure([get_class_setup_cassette_if_failed], delete_default=True)
         class TestATestCollection:
 
             @pytest.fixture(scope="class", autouse=True)
