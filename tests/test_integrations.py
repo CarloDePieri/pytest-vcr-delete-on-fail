@@ -4,7 +4,7 @@ import shutil
 import pytest
 import textwrap
 
-from tests.conftest import run_test
+from tests.conftest import fails, cassettes_remaining
 
 
 @pytest.fixture
@@ -68,7 +68,5 @@ def test_it_can_integrate_with_vcrpy_encrypt_easily(enc_teardown):
                     requests.get("https://github.com")
                     assert False
                 """)
-    return_code = run_test(test_string, "enc")
-    assert return_code == 1
-    cassette_folder = f"{folder}/cassettes/test_temp_{hash(test_string)}"
-    assert len(os.listdir(cassette_folder)) == 0
+    assert fails(test_string, subfolder="enc")
+    assert cassettes_remaining(path=f"{folder}/cassettes/test_temp_{hash(test_string)}") == 0

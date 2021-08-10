@@ -1,9 +1,8 @@
-import os
 import textwrap
 
 import pytest
 
-from tests.conftest import run_test
+from tests.conftest import passes, fails, cassettes_remaining
 
 fail_on_setup_test = textwrap.dedent("""
         import pytest
@@ -81,10 +80,8 @@ class TestATestCollections:
     @pytest.mark.parametrize("test_string", [fail_on_setup_test, fail_on_call_test, fail_on_teardown_test])
     def test_should_delete_cassettes_on_fail(self, test_string):
         """A test collections should delete cassettes on fail."""
-        return_code = run_test(test_string)
-        assert return_code == 1
-        cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
-        assert len(os.listdir(cassette_folder)) == 0
+        assert fails(test_string)
+        assert cassettes_remaining(test_string) == 0
 
     def test_should_be_able_to_handle_nested_marker(self):
         """A test collections should be able to handle nested marker."""
@@ -119,10 +116,8 @@ class TestATestCollections:
                         requests.get("https://github.com")
                         assert False
                 """)
-        return_code = run_test(test_string)
-        assert return_code == 1
-        cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
-        assert len(os.listdir(cassette_folder)) == 1
+        assert fails(test_string)
+        assert cassettes_remaining(test_string) == 1
 
     def test_should_mark_failed_class_setup_or_teardown(self):
         """A test collections should mark failed class setup or teardown."""
@@ -154,5 +149,4 @@ class TestATestCollections:
             cls = list(filter(lambda x: x.name == "test_should_fail_at_class_teardown", request.session.items))[0].cls
             assert cls.cls_teardown_failed
         """)
-        return_code = run_test(test_string)
-        assert return_code == 0
+        assert passes(test_string)

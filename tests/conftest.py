@@ -35,3 +35,25 @@ def run_test(test_string: str, subfolder: str = "") -> int:
 @pytest.fixture(scope="module")
 def vcr_config():
     return {"record_mode": ["once"]}
+
+
+def passes(test_string: str, subfolder: str = "") -> bool:
+    """Execute the test_string test and return True if it was successful."""
+    return run_test(test_string, subfolder) == 0
+
+
+def fails(test_string: str, subfolder: str = "", error_code: int = 1) -> bool:
+    """Execute the test_string test and return True if it failed with a specific error_code (1 by default)."""
+    return run_test(test_string, subfolder) == error_code
+
+
+def cassettes_remaining(test_string: str = None, path: str = None) -> int:
+    """Return the number of file left in a test cassettes folder."""
+    if test_string is None and path is None:
+        raise RuntimeError("Missing at least one argument")
+    else:
+        if path:
+            folder = path
+        else:
+            folder = f"tests/cassettes/test_temp_{hash(test_string)}"
+        return len(os.listdir(folder))
