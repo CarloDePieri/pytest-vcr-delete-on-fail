@@ -123,3 +123,36 @@ class TestATestCollections:
         assert return_code == 1
         cassette_folder = f"tests/cassettes/test_temp_{hash(test_string)}"
         assert len(os.listdir(cassette_folder)) == 1
+
+    def test_should_mark_failed_class_setup_or_teardown(self):
+        """A test collections should mark failed class setup or teardown."""
+        test_string = textwrap.dedent("""
+        import pytest
+
+        class TestSetToFail:
+            @pytest.fixture(scope="class", autouse=True)
+            def setup(self):
+                raise Exception
+            @pytest.mark.xfail
+            def test_should_fail_at_class_setup(self):
+                pass
+
+        class TestAlsoSetToFail:
+            @pytest.fixture(scope="class", autouse=True)
+            def teardown(self):
+                yield
+                raise Exception
+            @pytest.mark.xfail
+            def test_should_fail_at_class_teardown(self):
+                pass
+
+        # NOTE: this must be run together with the TestSetToFail and TestAlsoSetToFail classes since it checks the 
+        # recorded reports on THOSE tests
+        def test_a_class_failing_at_setup_time_should_have_a_report_claiming_so(request):
+            cls = list(filter(lambda x: x.name == "test_should_fail_at_class_setup", request.session.items))[0].cls
+            assert cls.cls_setup_failed
+            cls = list(filter(lambda x: x.name == "test_should_fail_at_class_teardown", request.session.items))[0].cls
+            assert cls.cls_teardown_failed
+        """)
+        return_code = run_test(test_string)
+        assert return_code == 0

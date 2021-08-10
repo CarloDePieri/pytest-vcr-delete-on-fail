@@ -1,11 +1,17 @@
 import os
+from typing import Optional
+
 import pytest
+import re
+
+from _pytest.nodes import Item
+from _pytest.reports import TestReport
+from _pytest.runner import CallInfo
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
-    """Hook used to make available to fixtures tests results.
-    To function this presume no stand-alone test: only tests inside classes are supported."""
+def pytest_runtest_makereport(item: Item, call: CallInfo):
+    """Hook used to make available to fixtures tests results."""
     outcome = yield
     rep = outcome.get_result()
 
@@ -18,7 +24,23 @@ def pytest_runtest_makereport(item, call):
         })
 
     # set a report attribute for each phase of a call: setup, call, teardown
+    # this gets rewritten, but since a failure stop a phase, it's the last report that counts
     item.reports[rep.when] = rep
+
+    # If class scoped test setup/teardown fail, mark the class to signal this
+    if item.cls is not None:
+        if has_class_scoped_phase_failed(rep):
+            setattr(item.cls, f"cls_{rep.when}_failed", True)
+
+
+def has_class_scoped_phase_failed(report: TestReport) -> bool:
+    """This will return True if the report describe a failed phase coming from a class scoped fixture."""
+    if len(report.longreprtext) > 0:
+        pattern = re.compile(r"(@pytest\.fixture\()(.*)(scope\ *\=\ *)(\"|\')(class)(\"|\')(.*)(\))")
+        found = pattern.search(report.longreprtext)
+        if found:
+            return True
+    return False
 
 
 def get_cassette_folder_path(test_file_path: str) -> str:
@@ -29,7 +51,7 @@ def get_cassette_folder_path(test_file_path: str) -> str:
         os.path.basename(test_file_path).replace(".py", ""))
 
 
-def get_default_cassette_path(item) -> str:
+def get_default_cassette_path(item: Item) -> str:
     """Return the cassette full path given the test item."""
     test = item.location[2]
     test_file_path = item.location[0]
@@ -43,7 +65,7 @@ def delete_cassette(cassette_path: str):
         os.remove(cassette_path)
 
 
-def test_failed(item) -> bool:
+def test_failed(item: Item) -> bool:
     """Check the reports and determine if a test has failed."""
     return (item.reports["setup"] and item.reports["setup"].failed) or \
            (item.reports["call"] and item.reports["call"].failed) or \
@@ -51,7 +73,7 @@ def test_failed(item) -> bool:
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_protocol(item, nextitem):
+def pytest_runtest_protocol(item: Item, nextitem: Optional[Item]):
     yield
     markers = list(item.iter_markers("delete_cassette_on_failure"))
     cassettes = set()
