@@ -124,6 +124,7 @@ class TestATestCollections:
         test_string = textwrap.dedent("""
         import pytest
 
+        @pytest.mark.order(1)
         class TestSetToFail:
             @pytest.fixture(scope="class", autouse=True)
             def setup(self):
@@ -132,6 +133,7 @@ class TestATestCollections:
             def test_should_fail_at_class_setup(self):
                 pass
 
+        @pytest.mark.order(2)
         class TestAlsoSetToFail:
             @pytest.fixture(scope="class", autouse=True)
             def teardown(self):
@@ -141,9 +143,10 @@ class TestATestCollections:
             def test_should_fail_at_class_teardown(self):
                 pass
 
-        # NOTE: this must be run together with the TestSetToFail and TestAlsoSetToFail classes since it checks the 
-        # recorded reports on THOSE tests
-        def test_a_class_failing_at_setup_time_should_have_a_report_claiming_so(request):
+        # NOTE: this must be run together with and after the TestSetToFail and TestAlsoSetToFail classes since it 
+        # checks the recorded reports on THOSE tests
+        @pytest.mark.order(3)
+        def test_failing_at_setup_time_should_have_a_report_claiming_so(request):
             cls = list(filter(lambda x: x.name == "test_should_fail_at_class_setup", request.session.items))[0].cls
             assert cls.cls_setup_failed
             cls = list(filter(lambda x: x.name == "test_should_fail_at_class_teardown", request.session.items))[0].cls

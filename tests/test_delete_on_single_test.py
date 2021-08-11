@@ -85,18 +85,21 @@ class TestWhenDealingWithASingleTest:
             fail_on_teardown = (True, True, False)
 
             @pytest.mark.xfail
+            @pytest.mark.order(1)
             @pytest.mark.parametrize("setup,call,teardown",
                                      [fail_on_setup, fail_on_call, fail_on_teardown], indirect=["setup", "teardown"])
             def test_runner_report(setup, call, teardown, clear_cassettes):
                 assert call
 
-            # NOTE: this must be run together with test_runner_report since it checks the recorded reports on THAT parametric test
-            # These are flagged as skipped because of xfail
+            # NOTE: this must be run together with and after test_runner_report since it checks the recorded reports
+            # on THAT parametric test
+            @pytest.mark.order(2)
             def test_check_runners(request, clear_cassettes):
                 def get_reports(description):
                     name = f"test_runner_report[{description[0]}-{description[1]}-{description[2]}]"
                     return list(filter(lambda t: t.name == name, request.session.items))[0].reports
                 failed_on_setup = get_reports(fail_on_setup)
+                # These are flagged as skipped because of xfail
                 assert failed_on_setup["setup"].skipped
                 assert failed_on_setup["call"] is None
                 assert failed_on_setup["teardown"].passed

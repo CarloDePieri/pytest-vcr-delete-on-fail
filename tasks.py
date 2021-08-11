@@ -52,14 +52,14 @@ def publish(c):
     c.run("poetry publish")
 
 
-def get_test_command(s=False, m=None):
+def get_test_command(s=False, m=None, other_flags=""):
     marks = ""
     if m is not None:
         marks = f" -m {m}"
     capture = ""
     if s:
         capture = " -s"
-    return f"poetry run pytest{capture}{marks}"
+    return f"poetry run pytest{capture}{marks}{other_flags}"
 
 
 @task()
@@ -69,10 +69,7 @@ def test(c, s=False, m=None):
 
 @task()
 def test_spec(c, m=None):
-    marks = ""
-    if m is not None:
-        marks = f" -m {m}"
-    c.run(f"poetry run pytest -p no:sugar --spec{marks}", pty=True)
+    c.run(get_test_command(m=m, other_flags=" -p no:sugar --spec"), pty=True)
 
 
 @task()
@@ -114,8 +111,8 @@ def get_coverage_test_command(m=None):
     # This requires a workaround since the target it's a pytest plugin itself
     # See https://pytest-cov.readthedocs.io/en/latest/plugins.html
     return f"COV_CORE_SOURCE={package_name} COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager " + \
-           f"poetry run pytest --cov={package_name} --cov-append --cov-report annotate:coverage/cov_annotate " + \
-           f"--cov-report html:coverage/cov_html{marks}"
+           f"poetry run pytest{marks} --cov={package_name} --cov-append --cov-report annotate:coverage/cov_annotate" + \
+           f" --cov-report html:coverage/cov_html"
 
 
 @task()
