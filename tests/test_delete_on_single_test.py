@@ -302,6 +302,25 @@ class TestWhenDealingWithASingleTest:
         assert fails(test_string)
         assert cassettes_remaining(test_string) == 0
 
+    def test_it_should_handle_none_as_only_argument(self):
+        """When dealing with a single test it should handle None as only argument."""
+        test_string = textwrap.dedent("""
+                import pytest
+                import requests
+
+                @pytest.fixture(scope="module")
+                def vcr_config():
+                    return {"record_mode": ["once"]}
+
+                @pytest.mark.vcr
+                @pytest.mark.vcr_delete_on_fail(None)
+                def test_this():
+                    requests.get("https://github.com")
+                    assert False
+                """)
+        assert fails(test_string)
+        assert cassettes_remaining(test_string) == 0
+
     def test_it_should_not_freak_out_with_an_invalid_marker_function_return(self):
         """When dealing with a single test it should not freak out with an invalid marker function return."""
         test_string = textwrap.dedent("""

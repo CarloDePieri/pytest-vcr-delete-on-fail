@@ -88,23 +88,24 @@ def pytest_runtest_protocol(item: Item, nextitem: Optional[Item]):
             if mark.kwargs.get("skip", False):
                 # This test has been marked as skip: no cassette will be deleted
                 skip = True
-            if len(mark.args) == 0 or mark.kwargs.get("delete_default", False):
+            if len(mark.args) == 0 or mark.args[0] is None or mark.kwargs.get("delete_default", False):
                 # No argument was used on the marker or the delete_default argument has been forced True
                 # add the default cassette to the set
                 cassettes.add(get_default_cassette_path(item))
             if len(mark.args) > 0:
-                # some argument was specified
-                for cassette in mark.args[0]:
-                    # iterate on the provided list
-                    if callable(cassette):
-                        try:
-                            # if it's a function try to execute it and save the returned value
-                            cassette = cassette(item)
-                        except Exception:
-                            pass
-                    if isinstance(cassette, str):
-                        # add the cassette to the set if it's a string
-                        cassettes.add(cassette)
+                if isinstance(mark.args[0], list):
+                    # some argument was specified
+                    for cassette in mark.args[0]:
+                        # iterate on the provided list
+                        if callable(cassette):
+                            try:
+                                # if it's a function try to execute it and save the returned value
+                                cassette = cassette(item)
+                            except Exception:
+                                pass
+                        if isinstance(cassette, str):
+                            # add the cassette to the set if it's a string
+                            cassettes.add(cassette)
         if not skip:
             for cassette in cassettes:
                 delete_cassette(cassette)
