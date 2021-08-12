@@ -9,6 +9,9 @@ from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
 
 
+marker_name = "vcr_delete_on_fail"
+
+
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item: Item, call: CallInfo):
     """Hook used to make available to fixtures tests results."""
@@ -75,7 +78,7 @@ def test_failed(item: Item) -> bool:
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_protocol(item: Item, nextitem: Optional[Item]):
     yield
-    markers = list(item.iter_markers("delete_cassette_on_failure"))
+    markers = list(item.iter_markers(marker_name))
     cassettes = set()
     skip = False
 
@@ -109,9 +112,12 @@ def pytest_runtest_protocol(item: Item, nextitem: Optional[Item]):
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", "delete_cassette_on_failure(cassette_path_list): the cassettes to be deleted on test failure;" +
-                   " the list elements can be string or callable(item) -> str where item is a pytest nodes.Item" +
-                   " object); if no argument is specified (or the argument delete_default=True is used), the cassette" +
-                   " will be determined automatically. If the argument skip=True is used, no cassette will be" +
-                   " deleted. This marker can be used multiple times."
+        "markers", f"{marker_name}(cassette_path_list: Optional[List[Union[str, Callable[[Item], str]]]],"
+                   f" delete_default: Optional[bool], skip: Optional[bool]): the cassettes that will be deleted on"
+                   f" test failure; list elements can be cassette string paths or functions that will return a"
+                   f" string path from a pytest nodes.Item object. If no argument or None or an empty list are"
+                   f" passed to the marker the cassette will be determined automatically. If the argument"
+                   f" delete_default=True is used, the automatically determined cassette will be deleted even with a"
+                   f" non empty cassette_path_list. If the argument skip=True is used, no cassette will be deleted at"
+                   f" all. This marker can be used multiple times."
     )

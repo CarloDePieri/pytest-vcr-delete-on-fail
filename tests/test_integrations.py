@@ -44,8 +44,8 @@ def test_it_can_integrate_with_vcrpy_encrypt(enc_teardown):
                     default = get_default_cassette_path(item)
                     return f"{default}{MyEncryptedPersister.clear_text_suffix}"
 
-                # Define a shorthand for the delete_cassette_on_failure marker
-                vcr_delete_on_fail = pytest.mark.delete_cassette_on_failure([get_encrypted_cassette,
+                # Define a shorthand for the vcr_delete_on_fail marker
+                vcr_delete_on_fail = pytest.mark.vcr_delete_on_fail([get_encrypted_cassette,
                                                                              get_clear_text_cassette])
                 """)
     folder = "tests/enc"
@@ -109,7 +109,7 @@ def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
             # otherwise return None
 
         @pytest.mark.vcr
-        @pytest.mark.delete_cassette_on_failure([get_class_setup_cassette_if_failed], delete_default=True)
+        @pytest.mark.vcr_delete_on_fail([get_class_setup_cassette_if_failed], delete_default=True)
         class TestATestCollection:
 
             @pytest.fixture(scope="class", autouse=True)

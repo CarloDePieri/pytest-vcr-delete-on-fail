@@ -18,7 +18,7 @@ fail_on_setup_test = textwrap.dedent("""
             assert False
             
         @pytest.mark.vcr
-        @pytest.mark.delete_cassette_on_failure
+        @pytest.mark.vcr_delete_on_fail
         class TestCollection:
         
             def test_first(self, setup):
@@ -36,7 +36,7 @@ fail_on_call_test = textwrap.dedent("""
             return {"record_mode": ["once"]}
             
         @pytest.mark.vcr
-        @pytest.mark.delete_cassette_on_failure
+        @pytest.mark.vcr_delete_on_fail
         class TestCollection:
         
             def test_first(self):
@@ -62,7 +62,7 @@ fail_on_teardown_test = textwrap.dedent("""
             assert False
             
         @pytest.mark.vcr
-        @pytest.mark.delete_cassette_on_failure
+        @pytest.mark.vcr_delete_on_fail
         class TestCollection:
         
             def test_first(self, teardown):
@@ -101,17 +101,17 @@ class TestATestCollections:
                 additional = f"tests/cassettes/{file_name}/additional.yaml"
 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure
+                @pytest.mark.vcr_delete_on_fail
                 class TestCollection:
 
-                    @pytest.mark.delete_cassette_on_failure([additional])
+                    @pytest.mark.vcr_delete_on_fail([additional])
                     def test_first(self):
                         requests.get("https://github.com")
                         with my_vcr.use_cassette(additional):
                             requests.get("https://github.com")
                         assert False
 
-                    @pytest.mark.delete_cassette_on_failure(skip=True)
+                    @pytest.mark.vcr_delete_on_fail(skip=True)
                     def test_second(self):
                         requests.get("https://github.com")
                         assert False

@@ -16,7 +16,7 @@ fail_on_call_test = textwrap.dedent("""
             return {"record_mode": ["once"]}
         
         @pytest.mark.vcr
-        @pytest.mark.delete_cassette_on_failure
+        @pytest.mark.vcr_delete_on_fail
         def test_this():
             requests.get("https://github.com")
             assert False
@@ -36,7 +36,7 @@ fail_on_setup_test = textwrap.dedent("""
             yield
         
         @pytest.mark.vcr
-        @pytest.mark.delete_cassette_on_failure
+        @pytest.mark.vcr_delete_on_fail
         def test_this(setup):
             assert True
         """)
@@ -55,7 +55,7 @@ fail_on_teardown_test = textwrap.dedent("""
             assert False
         
         @pytest.mark.vcr
-        @pytest.mark.delete_cassette_on_failure
+        @pytest.mark.vcr_delete_on_fail
         def test_this(teardown):
             assert True
         """)
@@ -125,7 +125,7 @@ class TestWhenDealingWithASingleTest:
                     return {"record_mode": ["once"]}
 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure
+                @pytest.mark.vcr_delete_on_fail
                 def test_this():
                     requests.get("https://github.com")
                     assert True
@@ -149,7 +149,7 @@ class TestWhenDealingWithASingleTest:
             
             my_vcr = vcr.VCR(record_mode="once")
                 
-            @pytest.mark.delete_cassette_on_failure(["{custom_cassette}"])
+            @pytest.mark.vcr_delete_on_fail(["{custom_cassette}"])
             def test_this(vcr_delete_test_cassette_on_failure):
                 with my_vcr.use_cassette("{custom_cassette}"):
                     requests.get("https://github.com")
@@ -169,7 +169,7 @@ class TestWhenDealingWithASingleTest:
                     return {"record_mode": ["once"]}
                 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure
+                @pytest.mark.vcr_delete_on_fail
                 def test_this():
                     requests.get("https://github.com")
                     assert False
@@ -199,9 +199,9 @@ class TestWhenDealingWithASingleTest:
                     return f"tests/cassettes/{file_name}/additional_{salt}.yaml"
 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure
-                @pytest.mark.delete_cassette_on_failure([get_additional_cassette("a")])
-                @pytest.mark.delete_cassette_on_failure([get_additional_cassette("b"), get_additional_cassette("c")])
+                @pytest.mark.vcr_delete_on_fail
+                @pytest.mark.vcr_delete_on_fail([get_additional_cassette("a")])
+                @pytest.mark.vcr_delete_on_fail([get_additional_cassette("b"), get_additional_cassette("c")])
                 def test_this():
                     requests.get("https://github.com")
                     with my_vcr.use_cassette(get_additional_cassette("a")):
@@ -238,7 +238,7 @@ class TestWhenDealingWithASingleTest:
                     return f"tests/cassettes/{file_name}/additional_b.yaml"
 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure([get_additional_cassette("a"), get_cassette], 
+                @pytest.mark.vcr_delete_on_fail([get_additional_cassette("a"), get_cassette], 
                                                         delete_default=True)
                 def test_this():
                     requests.get("https://github.com")
@@ -269,7 +269,7 @@ class TestWhenDealingWithASingleTest:
                 additional = f"tests/cassettes/{file_name}/additional.yaml"
 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure([additional], delete_default=True)
+                @pytest.mark.vcr_delete_on_fail([additional], delete_default=True)
                 def test_this():
                     requests.get("https://github.com")
                     with my_vcr.use_cassette(additional):
@@ -294,7 +294,7 @@ class TestWhenDealingWithASingleTest:
                     return get_default_cassette_path(item)
 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure([dummy])
+                @pytest.mark.vcr_delete_on_fail([dummy])
                 def test_this():
                     requests.get("https://github.com")
                     assert False
@@ -310,7 +310,7 @@ class TestWhenDealingWithASingleTest:
                 def broken(item):
                     return 1
 
-                @pytest.mark.delete_cassette_on_failure([broken])
+                @pytest.mark.vcr_delete_on_fail([broken])
                 def test_with_broken_func():
                     assert False
                 """)
@@ -325,7 +325,7 @@ class TestWhenDealingWithASingleTest:
                     raise Exception
                     return 1
 
-                @pytest.mark.delete_cassette_on_failure([broken])
+                @pytest.mark.vcr_delete_on_fail([broken])
                 def test_with_broken_func():
                     assert False
                 """)
@@ -342,8 +342,8 @@ class TestWhenDealingWithASingleTest:
                     return {"record_mode": ["once"]}
 
                 @pytest.mark.vcr
-                @pytest.mark.delete_cassette_on_failure
-                @pytest.mark.delete_cassette_on_failure(skip=True)
+                @pytest.mark.vcr_delete_on_fail
+                @pytest.mark.vcr_delete_on_fail(skip=True)
                 def test_with_broken_func():
                     requests.get("https://github.com")
                     assert False
