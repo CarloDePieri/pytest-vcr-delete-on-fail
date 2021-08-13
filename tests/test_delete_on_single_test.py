@@ -279,6 +279,26 @@ class TestWhenDealingWithASingleTest:
         assert fails(test_string)
         assert cassettes_remaining(test_string) == 0
 
+    def test_it_should_accept_the_list_as_named_argument(self):
+        """When dealing with a single test it should accept the list as named argument."""
+        test_string = textwrap.dedent("""
+                import pytest
+                import requests
+                from pytest_vcr_delete_on_fail import get_default_cassette_path
+
+                @pytest.fixture(scope="module")
+                def vcr_config():
+                    return {"record_mode": ["once"]}
+ 
+                @pytest.mark.vcr
+                @pytest.mark.vcr_delete_on_fail(cassette_path_list=[get_default_cassette_path])
+                def test_this():
+                    requests.get("https://github.com")
+                    assert False
+                """)
+        assert fails(test_string)
+        assert cassettes_remaining(test_string) == 0
+
     def test_should_be_able_to_handle_only_a_function_in_the_marker_argument_list(self):
         """When dealing with a single test should be able to handle only a function in the marker argument list."""
         test_string = textwrap.dedent("""
@@ -319,7 +339,7 @@ class TestWhenDealingWithASingleTest:
                     assert False
                 """)
         assert fails(test_string)
-        assert cassettes_remaining(test_string) == 0
+        assert cassettes_remaining(test_string) == 1
 
     def test_it_should_not_freak_out_with_an_invalid_marker_function_return(self):
         """When dealing with a single test it should not freak out with an invalid marker function return."""
