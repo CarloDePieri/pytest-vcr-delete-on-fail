@@ -50,6 +50,16 @@ def has_class_scoped_phase_failed(report: TestReport) -> bool:
     return False
 
 
+def has_class_scoped_setup_failed(item: Item) -> bool:
+    """Return True if test has failed because of a class scoped fixture in the setup phase."""
+    return item.cls.cls_setup_failed
+
+
+def has_class_scoped_teardown_failed(item: Item) -> bool:
+    """Return True if test has failed because of a class scoped fixture in the teardown phase."""
+    return item.cls.cls_teardown_failed
+
+
 def get_cassette_folder_path(test_file_path: str) -> str:
     """Return the cassette path given the test file path."""
     return os.path.join(
