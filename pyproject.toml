@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pytest-vcr-delete-on-fail"
-version = "0.0.1"
+version = "0.9.0"
 description = "A pytest plugin that automates vcrpy cassettes deletion on test failure."
 
 license = "GPL-3.0-only"
