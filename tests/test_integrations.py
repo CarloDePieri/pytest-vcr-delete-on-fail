@@ -77,6 +77,12 @@ def class_setup_teardown():
     shutil.rmtree("tests/class_setup")
 
 
+@pytest.fixture
+def class_teardown_teardown():
+    yield
+    shutil.rmtree("tests/class_teardown")
+
+
 def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
     """it can integrate with the class setup workflow"""
     test_string = textwrap.dedent("""
@@ -125,3 +131,55 @@ def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
         """)
     assert fails(test_string, "class_setup")
     assert cassettes_remaining(path=f"tests/class_setup/cassettes/test_temp_{hash(test_string)}") == 0
+
+
+def test_it_integrates_with_the_class_teardown_workflow(class_teardown_teardown):
+    """it integrates with the class teardown workflow"""
+    test_string = textwrap.dedent("""
+        import os
+        import pytest
+        import requests
+        import vcr
+        from typing import Union
+        from pytest_vcr_delete_on_fail import has_class_scoped_teardown_failed
+
+        def get_teardown_cassette_path(node) -> str:
+            # determine the class teardown cassette path from the node
+            el = node.nodeid.split("::")
+            name = f"{el[1]}_teardown"
+            path = os.path.join(os.path.dirname(el[0]), "cassettes", os.path.basename(el[0]).replace(".py", ""))
+            return f"{path}/{name}.yaml"
+
+        @pytest.fixture(scope="class")
+        def vcr_teardown(request):
+            # This fixture records request made during the class scoped function that uses it
+            cassette_path = get_teardown_cassette_path(request.node)
+            teardown_vcr = vcr.VCR(record_mode=["once"])
+            with teardown_vcr.use_cassette(cassette_path):
+                yield
+
+        def get_class_teardown_cassette_if_failed(item) -> Union[str, None]:
+            # check if the class has been flagged with a failed class teardown
+            if has_class_scoped_teardown_failed(item):
+                # return the class teardown cassette path
+                return get_teardown_cassette_path(item)
+            # otherwise return None
+
+        @pytest.mark.vcr
+        @pytest.mark.vcr_delete_on_fail([get_class_teardown_cassette_if_failed], delete_default=True)
+        class TestATestCollection:
+
+            @pytest.fixture(scope="class", autouse=True)
+            def teardown(self, vcr_teardown):
+                yield
+                # class scoped teardown, with vcr_teardown fixture
+                r = requests.get("https://github.com")
+                if self.value.status_code == r.status_code:
+                    raise Exception
+
+            def test_failing_at_class_teardown(self, request):
+                r = requests.get("https://gitlab.com")
+                request.cls.value = r
+        """)
+    assert fails(test_string, "class_teardown")
+    assert cassettes_remaining(path=f"tests/class_teardown/cassettes/test_temp_{hash(test_string)}") == 0
