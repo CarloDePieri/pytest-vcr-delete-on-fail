@@ -531,3 +531,39 @@ class TestWhenDealingWithASingleTest:
         )
         assert fails(test_string)
         assert cassettes_remaining(test_string) == 0
+
+    def test_it_should_not_break_with_a_faulty_cassette_path_func(self):
+        """When dealing with a single test it should not break with a faulty cassette path func."""
+        test_string = textwrap.dedent(
+            """
+            import pytest
+            import requests
+
+            @pytest.fixture(scope="module")
+            def vcr_config():
+                return {"record_mode": ["once"]}
+
+            @pytest.mark.vcr
+            @pytest.mark.order(1)
+            def test_first():
+                requests.get("https://github.com")
+                
+            def generate_broken(test_name: str):
+                def wrapped(item):
+                    raise Exception("nope")
+                return wrapped
+
+            def generate_one(test_name: str):
+                def wrapped(item):
+                    return f"tests/cassettes/{item.fspath.purebasename}/{test_name}.yaml"
+                return wrapped
+            
+            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_broken("test_first"))
+            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_one("test_first"))
+            @pytest.mark.order(2)
+            def test_second():
+                assert False
+            """
+        )
+        assert fails(test_string)
+        assert cassettes_remaining(test_string) == 0
