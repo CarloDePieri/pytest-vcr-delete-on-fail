@@ -12,6 +12,7 @@ from _pytest.runner import CallInfo
 
 marker_name = "vcr_delete_on_fail"
 cassette_path_list_str = "cassette_path_list"
+cassette_path_func_str = "cassette_path_func"
 delete_default_str = "delete_default"
 skip_str = "skip"
 
@@ -155,18 +156,29 @@ def get_cassettes(args: Dict[str, Any], item: Item) -> Set[str]:
                 # add the cassette to the set if it's a string
                 cassettes.add(cassette)
 
+    if cassette_path_func_str in args and callable(args[cassette_path_func_str]):
+        # The user specified a path function
+        generated = args[cassette_path_func_str](item)
+        if isinstance(generated, list):
+            for cassette in generated:
+                if isinstance(cassette, str):
+                    cassettes.add(cassette)
+        elif isinstance(generated, str):
+            cassettes.add(generated)
+
     return cassettes
 
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", f"{marker_name}({cassette_path_list_str}: Optional[List[Union[str, Callable[[Item], str]]]],"
-                   f" {delete_default_str}: Optional[bool], {skip_str}: Optional[bool]): the cassettes that will be"
-                   f" deleted on test failure; list elements can be cassette string paths or functions that will"
-                   f" return a string path from a pytest nodes.Item object. If no argument are passed to the marker"
-                   f" the cassette will be determined automatically. If the argument {delete_default_str}=True is"
-                   f" used, the automatically determined cassette will be deleted even when providing a"
-                   f" {cassette_path_list_str}. If the argument {skip_str}=True is used or a None"
+        "markers", f"{marker_name}({cassette_path_list_str}, {delete_default_str}, {skip_str}, {cassette_path_func_str}"
+                   f"): the cassette that will be deleted on text failure. {cassette_path_list_str}: Optional[List["
+                   f"Union[str, Callable[[Item], str]]]] is a list of strings or functions that determines which"
+                   f" cassettes will be deleted; {cassette_path_func_str}: Optional[Callable[[Item], Union[List[str],"
+                   f" str]]] can express cassette paths as well. In both cases, the Item object is a pytest nodes.Item."
+                   f" If no argument is passed to the marker the cassette will be determined automatically. If the"
+                   f" argument {delete_default_str}=True is used, the automatically determined cassette will be deleted"
+                   f" even when providing a {cassette_path_list_str}. If the argument {skip_str}=True is used or a None"
                    f" {cassette_path_list_str} is provided, no cassette will be deleted at all. This marker can be"
                    f" used multiple times."
     )

@@ -389,3 +389,105 @@ class TestWhenDealingWithASingleTest:
                 """)
         assert fails(test_string)
         assert cassettes_remaining(test_string) == 1
+
+    def test_it_should_support_both_a_cassette_list_and_generator(self):
+        """When dealing with a single test it should support both a cassette list and generator."""
+        test_string = textwrap.dedent("""
+            import pytest
+            import requests
+
+            @pytest.fixture(scope="module")
+            def vcr_config():
+                return {"record_mode": ["once"]}
+
+            @pytest.mark.vcr
+            @pytest.mark.order(1)
+            def test_first():
+                requests.get("https://github.com")
+
+            @pytest.mark.vcr
+            @pytest.mark.order(2)
+            def test_second():
+                requests.get("https://github.com")
+
+            def generate_one(test_name: str):
+                def wrapped(item):
+                    return f"tests/cassettes/{item.fspath.purebasename}/{test_name}.yaml"
+                return wrapped
+            
+            @pytest.mark.vcr_delete_on_fail(
+                cassette_path_list=[generate_one("test_first")],
+                cassette_path_func=generate_one("test_second"))
+            @pytest.mark.order(3)
+            def test_third():
+                assert False
+            """)
+        assert fails(test_string)
+        assert cassettes_remaining(test_string) == 0
+
+    def test_it_should_support_generator_that_returns_lists(self):
+        """When dealing with a single test it should support generator that returns lists."""
+        test_string = textwrap.dedent("""
+            import pytest
+            import requests
+
+            @pytest.fixture(scope="module")
+            def vcr_config():
+                return {"record_mode": ["once"]}
+
+            @pytest.mark.vcr
+            @pytest.mark.order(1)
+            def test_first():
+                requests.get("https://github.com")
+
+            @pytest.mark.vcr
+            @pytest.mark.order(2)
+            def test_second():
+                requests.get("https://github.com")
+
+            def generate_more(test_name_list):
+                def wrapped(item):
+                    return list(map(lambda x: f"tests/cassettes/{item.fspath.purebasename}/{x}.yaml", test_name_list))
+                return wrapped
+            
+            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_more(["test_first", "test_second"]))
+            @pytest.mark.order(3)
+            def test_third():
+                assert False
+            """)
+        assert fails(test_string)
+        assert cassettes_remaining(test_string) == 0
+
+    def test_it_should_accept_several_marker_with_a_cassette_path_function(self):
+        """When dealing with a single test it should accept several marker with a cassette path function."""
+        test_string = textwrap.dedent("""
+            import pytest
+            import requests
+
+            @pytest.fixture(scope="module")
+            def vcr_config():
+                return {"record_mode": ["once"]}
+
+            @pytest.mark.vcr
+            @pytest.mark.order(1)
+            def test_first():
+                requests.get("https://github.com")
+
+            @pytest.mark.vcr
+            @pytest.mark.order(2)
+            def test_second():
+                requests.get("https://github.com")
+
+            def generate_one(test_name: str):
+                def wrapped(item):
+                    return f"tests/cassettes/{item.fspath.purebasename}/{test_name}.yaml"
+                return wrapped
+            
+            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_one("test_first"))
+            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_one("test_second"))
+            @pytest.mark.order(3)
+            def test_third():
+                assert False
+            """)
+        assert fails(test_string)
+        assert cassettes_remaining(test_string) == 0

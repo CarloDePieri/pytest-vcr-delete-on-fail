@@ -92,6 +92,11 @@ otherwise. If `True` the cassette with the automatically computed path will be d
 Only valid as named argument. It's `False` by default. If `True` no cassette will be deleted for that test. It's
 equivalent to passing `cassette_path_list=None`.
 
+###### cassette_path_func
+
+A function that takes the `nodes.Item` as only argument and that returns a cassette path or a list of cassette paths
+that will be deleted.
+
 ### Utilities
 
 When writing a function to determine a cassette path here are some useful imports from `pytest_vcr_delete_on_fail`:
@@ -147,7 +152,7 @@ To run the test suite against all supported python version (they must be in path
 inv test-all-python-version
 ```
 
-To test the github workflow with [act](https://github.com/nektos/act):
+To test the GitHub workflow with [act](https://github.com/nektos/act):
 
 ```bash
 inv act-dev           # test the dev workflow
