@@ -61,7 +61,13 @@ jobs:
       - name: Configure poetry
         run: poetry config virtualenvs.in-project true
 
-      - name: Install dependencies and test for all supported python version
+      - name: Install the first python venv
+        run: inv install -p latest
+
+      - name: Check formatting
+        run: poetry run black --check .
+
+      - name: Launch tests against all supported python versions
         run: inv test-all-python-version --coverage
 
       - name: Prepare the coveralls config.

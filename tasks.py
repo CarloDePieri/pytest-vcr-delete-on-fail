@@ -10,12 +10,12 @@ supported_python_versions = ["python3.7", "python3.8", "python3.9", "python3.10"
 default_python_bin = supported_python_versions[0]
 
 
-# If the most currently activated python version is desired, use 'inv install -p latest'
+# By default, target the OLDEST python version
+# If the most currently supported python version is desired, use 'inv install -p latest'
 @task
 def install(c, python=default_python_bin):
     if python == "latest":
-        # don't do anything here: poetry will use the default python version
-        pass
+        c.run("poetry env use {}".format(supported_python_versions[-1]))
     else:
         c.run("poetry env use {}".format(python))
     c.run("poetry install")
@@ -110,9 +110,11 @@ def get_coverage_test_command(m=None):
         marks = f" -m {m}"
     # This requires a workaround since the target it's a pytest plugin itself
     # See https://pytest-cov.readthedocs.io/en/latest/plugins.html
-    return f"COV_CORE_SOURCE={package_name} COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager " + \
-           f"poetry run pytest{marks} --cov={package_name} --cov-append --cov-report annotate:coverage/cov_annotate" + \
-           f" --cov-report html:coverage/cov_html"
+    return (
+        f"COV_CORE_SOURCE={package_name} COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager "
+        + f"poetry run pytest{marks} --cov={package_name} --cov-append --cov-report annotate:coverage/cov_annotate"
+        + f" --cov-report html:coverage/cov_html"
+    )
 
 
 @task()
@@ -139,7 +141,10 @@ def act_prod(c, cmd=""):
     if cmd == "":
         c.run("act -W .github/workflows/prod.yml", pty=True)
     elif cmd == "shell":
-        c.run(f"docker exec --env-file {act_secrets_file} -it {act_prod_ctx} bash", pty=True)
+        c.run(
+            f"docker exec --env-file {act_secrets_file} -it {act_prod_ctx} bash",
+            pty=True,
+        )
     elif cmd == "clean":
         c.run(f"docker rm -f {act_prod_ctx}", pty=True)
 
@@ -149,6 +154,9 @@ def act_dev(c, cmd=""):
     if cmd == "":
         c.run("act -W .github/workflows/dev.yml", pty=True)
     elif cmd == "shell":
-        c.run(f"docker exec --env-file {act_secrets_file} -it {act_dev_ctx} bash", pty=True)
+        c.run(
+            f"docker exec --env-file {act_secrets_file} -it {act_dev_ctx} bash",
+            pty=True,
+        )
     elif cmd == "clean":
         c.run(f"docker rm -f {act_dev_ctx}", pty=True)
