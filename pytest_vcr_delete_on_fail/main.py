@@ -25,11 +25,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
 
     # init the empty reports item if necessary
     if not hasattr(item, "reports"):
-        setattr(item, "reports", {
-            "setup": None,
-            "call": None,
-            "teardown": None
-        })
+        setattr(item, "reports", {"setup": None, "call": None, "teardown": None})
 
     # set a report attribute for each phase of a call: setup, call, teardown
     # this gets rewritten, but since a failure stop a phase, it's the last report that counts
@@ -44,7 +40,9 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
 def has_class_scoped_phase_failed(report: TestReport) -> bool:
     """This will return True if the report describe a failed phase coming from a class scoped fixture."""
     if len(report.longreprtext) > 0:
-        pattern = re.compile(r"(@pytest\.fixture\()(.*)(scope\ *\=\ *)([\"\'])(class)([\"\'])(.*)(\))")
+        pattern = re.compile(
+            r"(@pytest\.fixture\()(.*)(scope\ *\=\ *)([\"\'])(class)([\"\'])(.*)(\))"
+        )
         found = pattern.search(report.longreprtext)
         if found:
             return True
@@ -66,7 +64,8 @@ def get_cassette_folder_path(test_file_path: str) -> str:
     return os.path.join(
         os.path.dirname(test_file_path),
         "cassettes",
-        os.path.basename(test_file_path).replace(".py", ""))
+        os.path.basename(test_file_path).replace(".py", ""),
+    )
 
 
 def get_default_cassette_path(item: Item) -> str:
@@ -85,9 +84,11 @@ def delete_cassette(cassette_path: str):
 
 def test_failed(item: Item) -> bool:
     """Check the reports and determine if a test has failed."""
-    return (item.reports["setup"] and item.reports["setup"].failed) or \
-           (item.reports["call"] and item.reports["call"].failed) or \
-           (item.reports["teardown"] and item.reports["teardown"].failed)
+    return (
+        (item.reports["setup"] and item.reports["setup"].failed)
+        or (item.reports["call"] and item.reports["call"].failed)
+        or (item.reports["teardown"] and item.reports["teardown"].failed)
+    )
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -126,8 +127,10 @@ def parse_marker_arguments(mark: Mark) -> Dict[str, Any]:
 
 def should_skip_the_test(args: Dict[str, Any]) -> bool:
     """Return True if the test should skip cassette deletion. This is caused by a cassette_path_list explicitly set to
-     None or by a skip=True argument."""
-    return (cassette_path_list_str in args and args[cassette_path_list_str] is None) or args.get(skip_str, False)
+    None or by a skip=True argument."""
+    return (
+        cassette_path_list_str in args and args[cassette_path_list_str] is None
+    ) or args.get(skip_str, False)
 
 
 def should_delete_default_cassette(args: Dict[str, Any]) -> bool:
@@ -136,7 +139,9 @@ def should_delete_default_cassette(args: Dict[str, Any]) -> bool:
     return args.get(delete_default_str, False) or cassette_path_list_str not in args
 
 
-def _parse_path_list(path_list: List[Union[str, Callable[[Item], str]]], item: Item) -> Set[str]:
+def _parse_path_list(
+    path_list: List[Union[str, Callable[[Item], str]]], item: Item
+) -> Set[str]:
     """Parse the path list and return a set of cassette paths."""
     cassettes = set()
     for cassette in path_list:
@@ -150,7 +155,9 @@ def _parse_path_list(path_list: List[Union[str, Callable[[Item], str]]], item: I
     return cassettes
 
 
-def _parse_path_func(path_func: Callable[[Item], Union[List[str], str]], item: Item) -> Set[str]:
+def _parse_path_func(
+    path_func: Callable[[Item], Union[List[str], str]], item: Item
+) -> Set[str]:
     """Run the path function and return a set of resulting cassette paths."""
     cassettes = set()
     try:
@@ -173,27 +180,34 @@ def get_cassettes(args: Dict[str, Any], item: Item) -> Set[str]:
     if should_delete_default_cassette(args):
         cassettes.add(get_default_cassette_path(item))
 
-    if cassette_path_list_str in args and isinstance(args[cassette_path_list_str], list):
+    if cassette_path_list_str in args and isinstance(
+        args[cassette_path_list_str], list
+    ):
         # The user specified cassette_path_list and it's really a list
-        cassettes = cassettes.union(_parse_path_list(args[cassette_path_list_str], item))
+        cassettes = cassettes.union(
+            _parse_path_list(args[cassette_path_list_str], item)
+        )
 
     if cassette_path_func_str in args and callable(args[cassette_path_func_str]):
         # The user specified a path function
-        cassettes = cassettes.union(_parse_path_func(args[cassette_path_func_str], item))
+        cassettes = cassettes.union(
+            _parse_path_func(args[cassette_path_func_str], item)
+        )
 
     return cassettes
 
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", f"{marker_name}({cassette_path_list_str}, {delete_default_str}, {skip_str}, {cassette_path_func_str}"
-                   f"): the cassette that will be deleted on text failure. {cassette_path_list_str}: Optional[List["
-                   f"Union[str, Callable[[Item], str]]]] is a list of strings or functions that determines which"
-                   f" cassettes will be deleted; {cassette_path_func_str}: Optional[Callable[[Item], Union[List[str],"
-                   f" str]]] can express cassette paths as well. In both cases, the Item object is a pytest nodes.Item."
-                   f" If no argument is passed to the marker the cassette will be determined automatically. If the"
-                   f" argument {delete_default_str}=True is used, the automatically determined cassette will be deleted"
-                   f" even when providing a {cassette_path_list_str}. If the argument {skip_str}=True is used or a None"
-                   f" {cassette_path_list_str} is provided, no cassette will be deleted at all. This marker can be"
-                   f" used multiple times."
+        "markers",
+        f"{marker_name}({cassette_path_list_str}, {delete_default_str}, {skip_str}, {cassette_path_func_str}"
+        f"): the cassette that will be deleted on text failure. {cassette_path_list_str}: Optional[List["
+        f"Union[str, Callable[[Item], str]]]] is a list of strings or functions that determines which"
+        f" cassettes will be deleted; {cassette_path_func_str}: Optional[Callable[[Item], Union[List[str],"
+        f" str]]] can express cassette paths as well. In both cases, the Item object is a pytest nodes.Item."
+        f" If no argument is passed to the marker the cassette will be determined automatically. If the"
+        f" argument {delete_default_str}=True is used, the automatically determined cassette will be deleted"
+        f" even when providing a {cassette_path_list_str}. If the argument {skip_str}=True is used or a None"
+        f" {cassette_path_list_str} is provided, no cassette will be deleted at all. This marker can be"
+        f" used multiple times.",
     )

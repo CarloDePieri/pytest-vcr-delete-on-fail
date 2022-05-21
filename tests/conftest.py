@@ -43,7 +43,9 @@ def passes(test_string: str, subfolder: str = "", delete_test: bool = True) -> b
     return run_test(test_string, subfolder, delete_test) == 0
 
 
-def fails(test_string: str, subfolder: str = "", error_code: int = 1, delete_test: bool = True) -> bool:
+def fails(
+    test_string: str, subfolder: str = "", error_code: int = 1, delete_test: bool = True
+) -> bool:
     """Execute the test_string test and return True if it failed with a specific error_code (1 by default)."""
     return run_test(test_string, subfolder, delete_test) == error_code
 

@@ -4,7 +4,8 @@ import pytest
 
 from tests.conftest import passes, fails, cassettes_remaining
 
-fail_on_setup_test = textwrap.dedent("""
+fail_on_setup_test = textwrap.dedent(
+    """
         import pytest
         import requests
             
@@ -26,8 +27,10 @@ fail_on_setup_test = textwrap.dedent("""
         
             def test_second(self, setup):
                 assert True
-        """)
-fail_on_call_test = textwrap.dedent("""
+        """
+)
+fail_on_call_test = textwrap.dedent(
+    """
         import pytest
         import requests
             
@@ -46,8 +49,10 @@ fail_on_call_test = textwrap.dedent("""
             def test_second(self):
                 requests.get("https://github.com")
                 assert False
-        """)
-fail_on_teardown_test = textwrap.dedent("""
+        """
+)
+fail_on_teardown_test = textwrap.dedent(
+    """
         import pytest
         import requests
             
@@ -70,14 +75,17 @@ fail_on_teardown_test = textwrap.dedent("""
         
             def test_second(self, teardown):
                 assert True
-        """)
+        """
+)
 
 
 @pytest.mark.usefixtures("clear_cassettes")
 class TestATestCollections:
     """Test: A test collections..."""
 
-    @pytest.mark.parametrize("test_string", [fail_on_setup_test, fail_on_call_test, fail_on_teardown_test])
+    @pytest.mark.parametrize(
+        "test_string", [fail_on_setup_test, fail_on_call_test, fail_on_teardown_test]
+    )
     def test_should_delete_cassettes_on_fail(self, test_string):
         """A test collections should delete cassettes on fail."""
         assert fails(test_string)
@@ -85,7 +93,8 @@ class TestATestCollections:
 
     def test_should_be_able_to_handle_nested_marker(self):
         """A test collections should be able to handle nested marker."""
-        test_string = textwrap.dedent("""
+        test_string = textwrap.dedent(
+            """
                 import os
                 import pytest
                 import requests
@@ -115,13 +124,15 @@ class TestATestCollections:
                     def test_second(self):
                         requests.get("https://github.com")
                         assert False
-                """)
+                """
+        )
         assert fails(test_string)
         assert cassettes_remaining(test_string) == 1
 
     def test_should_mark_failed_class_setup_or_teardown(self):
         """A test collections should mark failed class setup or teardown."""
-        test_string = textwrap.dedent("""
+        test_string = textwrap.dedent(
+            """
         import pytest
 
         @pytest.mark.order(1)
@@ -151,5 +162,6 @@ class TestATestCollections:
             assert cls.cls_setup_failed
             cls = list(filter(lambda x: x.name == "test_should_fail_at_class_teardown", request.session.items))[0].cls
             assert cls.cls_teardown_failed
-        """)
+        """
+        )
         assert passes(test_string)
