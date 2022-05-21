@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Set, Dict, Any
+from typing import Optional, Set, Dict, Any, List, Union, Callable
 
 import pytest
 import re
@@ -44,7 +44,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
 def has_class_scoped_phase_failed(report: TestReport) -> bool:
     """This will return True if the report describe a failed phase coming from a class scoped fixture."""
     if len(report.longreprtext) > 0:
-        pattern = re.compile(r"(@pytest\.fixture\()(.*)(scope\ *\=\ *)(\"|\')(class)(\"|\')(.*)(\))")
+        pattern = re.compile(r"(@pytest\.fixture\()(.*)(scope\ *\=\ *)([\"\'])(class)([\"\'])(.*)(\))")
         found = pattern.search(report.longreprtext)
         if found:
             return True
@@ -136,6 +136,36 @@ def should_delete_default_cassette(args: Dict[str, Any]) -> bool:
     return args.get(delete_default_str, False) or cassette_path_list_str not in args
 
 
+def _parse_path_list(path_list: List[Union[str, Callable[[Item], str]]], item: Item) -> Set[str]:
+    """Parse the path list and return a set of cassette paths."""
+    cassettes = set()
+    for cassette in path_list:
+        if callable(cassette):
+            try:
+                cassette = cassette(item)
+            except Exception:
+                pass
+        if isinstance(cassette, str):
+            cassettes.add(cassette)
+    return cassettes
+
+
+def _parse_path_func(path_func: Callable[[Item], Union[List[str], str]], item: Item) -> Set[str]:
+    """Run the path function and return a set of resulting cassette paths."""
+    cassettes = set()
+    try:
+        generated = path_func(item)
+        if isinstance(generated, list):
+            for cassette in generated:
+                if isinstance(cassette, str):
+                    cassettes.add(cassette)
+        elif isinstance(generated, str):
+            cassettes.add(generated)
+    except Exception:
+        pass
+    return cassettes
+
+
 def get_cassettes(args: Dict[str, Any], item: Item) -> Set[str]:
     """Return a set of cassette paths derived from the provided marker args."""
     cassettes = set()
@@ -145,26 +175,11 @@ def get_cassettes(args: Dict[str, Any], item: Item) -> Set[str]:
 
     if cassette_path_list_str in args and isinstance(args[cassette_path_list_str], list):
         # The user specified cassette_path_list and it's really a list
-        for cassette in args[cassette_path_list_str]:
-            if callable(cassette):
-                # If it's a function try to execute it and save back the returned value
-                try:
-                    cassette = cassette(item)
-                except Exception:
-                    pass
-            if isinstance(cassette, str):
-                # add the cassette to the set if it's a string
-                cassettes.add(cassette)
+        cassettes = cassettes.union(_parse_path_list(args[cassette_path_list_str], item))
 
     if cassette_path_func_str in args and callable(args[cassette_path_func_str]):
         # The user specified a path function
-        generated = args[cassette_path_func_str](item)
-        if isinstance(generated, list):
-            for cassette in generated:
-                if isinstance(cassette, str):
-                    cassettes.add(cassette)
-        elif isinstance(generated, str):
-            cassettes.add(generated)
+        cassettes = cassettes.union(_parse_path_func(args[cassette_path_func_str], item))
 
     return cassettes
 
