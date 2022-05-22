@@ -1,3 +1,7 @@
+from contextlib import contextmanager
+import os
+
+
 from invoke import task
 
 
@@ -114,6 +118,8 @@ def get_coverage_test_command(m=None):
         f"COV_CORE_SOURCE={package_name} COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager "
         + f"poetry run pytest{marks} --cov={package_name} --cov-append --cov-report annotate:coverage/cov_annotate"
         + f" --cov-report html:coverage/cov_html"
+        + f" --cov-report xml:coverage/sonarqube/coverage.xml"
+        + f" --junitxml=coverage/sonarqube/results.xml"
     )
 
 
@@ -126,6 +132,54 @@ def test_cov(c, m=None):
 @task(test_cov)
 def html_cov(c):
     c.run("xdg-open coverage/cov_html/index.html")
+
+
+@task()
+def checks(c):
+    c.run("poetry run black --check .")
+    # c.run("poetry run mypy --strict pytest_vcr_delete_on_fail")
+
+
+#
+# SONARQUBE
+#
+@contextmanager
+def patched_coverage_path(c) -> None:
+    """Make sure the path in the coverage file are mapped inside the sonar container."""
+    coverage_file = "coverage/sonarqube/coverage.xml"
+    pwd = os.getcwd().replace("/", "\\/")
+    src = "/usr/src".replace("/", "\\/")
+    c.run(f"sed -i 's#{pwd}#{src}#' {coverage_file}")
+    try:
+        yield
+    except Exception as e:
+        # Make sure the coverage path are restored even with an error
+        c.run(f"sed -i 's#{src}#{pwd}#' {coverage_file}")
+        raise e
+    c.run(f"sed -i 's#{src}#{pwd}#' {coverage_file}")
+
+
+@task()
+def sonar(c, no_branch=False):
+    """Run a sonarqube analysis. It needs docker installed and the .secrets file present."""
+    repo_full_path = os.getcwd()
+    no_branch_str = ""
+    if not no_branch:
+        branch = "`git rev-parse --abbrev-ref HEAD`"
+        no_branch_str = f'-e SONAR_SCANNER_OPTS="-Dsonar.branch.name={branch}"'
+
+    # Make sure coverage data is up-to-date
+    c.run(get_coverage_test_command(), pty=True, warn=True)
+
+    with patched_coverage_path(c):
+        c.run(
+            "docker run"
+            " --rm"
+            f" --env-file .secrets"
+            f" {no_branch_str}"
+            f" -v '{repo_full_path}:/usr/src'"
+            f" sonarsource/sonar-scanner-cli"
+        )
 
 
 #

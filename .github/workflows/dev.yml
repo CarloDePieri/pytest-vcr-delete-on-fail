@@ -65,8 +65,13 @@ jobs:
         run: inv install -p latest
 
       - name: Check formatting
-        run: poetry run black --check .
+        run: inv checks
 
       - name: Launch tests against all supported python versions
-        run: inv test-all-python-version
+        run: inv test-all-python-version --coverage
+
+      - uses: CarloDePieri/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 

@@ -52,6 +52,7 @@ jobs:
         if: env.using_act == 'true'
         run: |
           echo "export PATH=\"/opt/hostedtoolcache/Python/${{ env.python_version }}/x64:/opt/hostedtoolcache/Python/${{ env.python_version }}/x64/bin:$PATH\"" >> /root/.bashrc
+
       - name: Upgrade pip.
         run: python -m pip install --upgrade pip
 
@@ -65,7 +66,7 @@ jobs:
         run: inv install -p latest
 
       - name: Check formatting
-        run: poetry run black --check .
+        run: inv checks
 
       - name: Launch tests against all supported python versions
         run: inv test-all-python-version --coverage
@@ -73,6 +74,12 @@ jobs:
       - name: Prepare the coveralls config.
         run: |
           echo "repo_token: ${{ secrets.COVERALLS_TOKEN }}" > .coveralls.yml
+
+      - uses: CarloDePieri/sonarqube-scan-action@master
+        if: env.using_act == 'false'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: Upload coverage stats
         run: inv publish-coverage
