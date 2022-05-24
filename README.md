@@ -1,4 +1,4 @@
-[![PyPI](https://img.shields.io/pypi/v/pytest-vcr-delete-on-fail)](https://pypi.org/project/pytest-vcr-delete-on-fail/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pytest-vcr-delete-on-fail)](https://pypi.org/project/pytest-vcr-delete-on-fail/) [![CI Status](https://img.shields.io/github/workflow/status/CarloDePieri/pytest-vcr-delete-on-fail/prod?logo=github)](https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/actions/workflows/prod.yml) [![Coverage Status](https://coveralls.io/repos/github/CarloDePieri/pytest-vcr-delete-on-fail/badge.svg?branch=main)](https://coveralls.io/github/CarloDePieri/pytest-vcr-delete-on-fail?branch=main) [![Maintenance](https://img.shields.io/maintenance/yes/2022)](https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PyPI](https://img.shields.io/pypi/v/pytest-vcr-delete-on-fail)](https://pypi.org/project/pytest-vcr-delete-on-fail/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pytest-vcr-delete-on-fail)](https://pypi.org/project/pytest-vcr-delete-on-fail/) [![CI Status](https://img.shields.io/github/workflow/status/CarloDePieri/pytest-vcr-delete-on-fail/prod?logo=github)](https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/actions/workflows/prod.yml) [![Coverage Status](https://coveralls.io/repos/github/CarloDePieri/pytest-vcr-delete-on-fail/badge.svg?branch=main)](https://coveralls.io/github/CarloDePieri/pytest-vcr-delete-on-fail?branch=main) ![Sonarqube ratings](https://img.shields.io/badge/sonarqube%20ratings-A-success) [![Maintenance](https://img.shields.io/maintenance/yes/2022)](https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 A pytest plugin that automates vcrpy cassettes deletion on test failure.
 
@@ -14,6 +14,14 @@ This possibility leads to doubt and untrust towards the test suite, which is wro
 
 This plugin provides a pytest marker that solves the uncertainty: when a marked test fails its http requests cache will
 be purged, so that it can start fresh on the next run.
+
+## Targeted pytest version
+
+Pytest internal API can change from major version, so this plugin versions is targeted at specific pytest versions.
+
+| pytest-vcr-delete-on-fail | pytest  |
+|:-------------------------:|:-------:|
+|           1.1.0           |   6.*   |
 
 ## Install
 
