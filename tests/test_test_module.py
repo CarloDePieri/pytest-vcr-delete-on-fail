@@ -13,7 +13,8 @@ cassette_file = f"{test_cassettes_folder}/test.yaml"
 
 
 def get_test_string(passing: bool) -> str:
-    return textwrap.dedent(f"""
+    return textwrap.dedent(
+        f"""
                 import requests
                 import vcr
                 
@@ -22,18 +23,24 @@ def get_test_string(passing: bool) -> str:
                         with vcr.use_cassette("{cassette_file}"):
                             requests.get("https://github.com")
                         assert {"True" if passing else "False"}
-                """)
+                """
+    )
 
 
 def there_are_no_temp_file() -> bool:
-    return len(list(filter(lambda f: f.startswith("test_temp"), os.listdir("tests")))) == 0
+    return (
+        len(list(filter(lambda f: f.startswith("test_temp"), os.listdir("tests")))) == 0
+    )
 
 
 @pytest.mark.usefixtures("clear_cassettes")
 class TestTheTestModule:
     """Test: The test module..."""
 
-    @pytest.mark.parametrize("test_string,return_code", [(get_test_string(True), 0), (get_test_string(False), 1)])
+    @pytest.mark.parametrize(
+        "test_string,return_code",
+        [(get_test_string(True), 0), (get_test_string(False), 1)],
+    )
     def test_should_be_able_to_run_arbitrary_test_files(self, test_string, return_code):
         """The module should be able to run arbitrary test files."""
         ret_code = run_test(test_string)
@@ -42,7 +49,9 @@ class TestTheTestModule:
         assert os.path.isfile(cassette_file)
 
     @pytest.mark.parametrize("dummy", [True, True])
-    def test_should_ensure_that_no_cassette_are_there_at_the_start_of_a_test_a(self, dummy):
+    def test_should_ensure_that_no_cassette_are_there_at_the_start_of_a_test_a(
+        self, dummy
+    ):
         """The test module should ensure that no cassette are there at the start of a test a."""
         common_cassette = f"{test_cassettes_folder}/common.yaml"
         assert not os.path.isfile(common_cassette)

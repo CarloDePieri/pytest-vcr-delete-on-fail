@@ -16,7 +16,8 @@ def enc_teardown():
 def test_it_can_integrate_with_vcrpy_encrypt(enc_teardown):
     """It can integrate with vcrpy_encrypt"""
     # Prepare the conftest to configure vcrpy_encrypt
-    conftest_string = textwrap.dedent("""
+    conftest_string = textwrap.dedent(
+        """
                 import pytest
                 from vcrpy_encrypt import BaseEncryptedPersister
                 from pytest_vcr_delete_on_fail import get_default_cassette_path
@@ -47,7 +48,8 @@ def test_it_can_integrate_with_vcrpy_encrypt(enc_teardown):
                 # Define a shorthand for the vcr_delete_on_fail marker
                 vcr_delete_on_fail = pytest.mark.vcr_delete_on_fail([get_encrypted_cassette,
                                                                              get_clear_text_cassette])
-                """)
+                """
+    )
     folder = "tests/enc"
     if not os.path.isdir(folder):
         os.mkdir(folder)
@@ -56,7 +58,8 @@ def test_it_can_integrate_with_vcrpy_encrypt(enc_teardown):
     with open(f"{folder}/conftest.py", "w") as f:
         f.write(conftest_string)
 
-    test_string = textwrap.dedent("""
+    test_string = textwrap.dedent(
+        """
                 import pytest
                 import requests
                 from tests.enc.conftest import vcr_delete_on_fail
@@ -66,9 +69,13 @@ def test_it_can_integrate_with_vcrpy_encrypt(enc_teardown):
                 def test_this():
                     requests.get("https://github.com")
                     assert False
-                """)
+                """
+    )
     assert fails(test_string, subfolder="enc")
-    assert cassettes_remaining(path=f"{folder}/cassettes/test_temp_{hash(test_string)}") == 0
+    assert (
+        cassettes_remaining(path=f"{folder}/cassettes/test_temp_{hash(test_string)}")
+        == 0
+    )
 
 
 @pytest.fixture
@@ -85,7 +92,8 @@ def class_teardown_teardown():
 
 def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
     """it can integrate with the class setup workflow"""
-    test_string = textwrap.dedent("""
+    test_string = textwrap.dedent(
+        """
         import os
         import pytest
         import requests
@@ -128,14 +136,21 @@ def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
             def test_failing_at_class_setup(self):
                 assert self.value.status_code == 200
                 requests.get("https://gitlab.com")
-        """)
+        """
+    )
     assert fails(test_string, "class_setup")
-    assert cassettes_remaining(path=f"tests/class_setup/cassettes/test_temp_{hash(test_string)}") == 0
+    assert (
+        cassettes_remaining(
+            path=f"tests/class_setup/cassettes/test_temp_{hash(test_string)}"
+        )
+        == 0
+    )
 
 
 def test_it_integrates_with_the_class_teardown_workflow(class_teardown_teardown):
     """it integrates with the class teardown workflow"""
-    test_string = textwrap.dedent("""
+    test_string = textwrap.dedent(
+        """
         import os
         import pytest
         import requests
@@ -180,6 +195,12 @@ def test_it_integrates_with_the_class_teardown_workflow(class_teardown_teardown)
             def test_failing_at_class_teardown(self, request):
                 r = requests.get("https://gitlab.com")
                 request.cls.value = r
-        """)
+        """
+    )
     assert fails(test_string, "class_teardown")
-    assert cassettes_remaining(path=f"tests/class_teardown/cassettes/test_temp_{hash(test_string)}") == 0
+    assert (
+        cassettes_remaining(
+            path=f"tests/class_teardown/cassettes/test_temp_{hash(test_string)}"
+        )
+        == 0
+    )

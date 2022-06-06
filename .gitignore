@@ -8,3 +8,4 @@ coverage
 .coveralls.yml
 .secrets
 dist
+.scannerwork/

@@ -1,4 +1,4 @@
-[![PyPI](https://img.shields.io/pypi/v/pytest-vcr-delete-on-fail)](https://pypi.org/project/pytest-vcr-delete-on-fail/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pytest-vcr-delete-on-fail)](https://pypi.org/project/pytest-vcr-delete-on-fail/) [![CI Status](https://img.shields.io/github/workflow/status/CarloDePieri/pytest-vcr-delete-on-fail/prod?logo=github)](https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/actions/workflows/prod.yml) [![Coverage Status](https://coveralls.io/repos/github/CarloDePieri/pytest-vcr-delete-on-fail/badge.svg?branch=main)](https://coveralls.io/github/CarloDePieri/pytest-vcr-delete-on-fail?branch=main) [![Maintenance](https://img.shields.io/maintenance/yes/2022)](https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/)
+[![PyPI](https://img.shields.io/pypi/v/pytest-vcr-delete-on-fail)](https://pypi.org/project/pytest-vcr-delete-on-fail/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pytest-vcr-delete-on-fail)](https://pypi.org/project/pytest-vcr-delete-on-fail/) [![CI Status](https://img.shields.io/github/workflow/status/CarloDePieri/pytest-vcr-delete-on-fail/prod?logo=github)](https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/actions/workflows/prod.yml) [![Coverage Status](https://coveralls.io/repos/github/CarloDePieri/pytest-vcr-delete-on-fail/badge.svg?branch=main)](https://coveralls.io/github/CarloDePieri/pytest-vcr-delete-on-fail?branch=main) ![Sonarqube ratings](https://img.shields.io/badge/sonarqube%20ratings-A-success) [![Maintenance](https://img.shields.io/maintenance/yes/2022)](https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 A pytest plugin that automates vcrpy cassettes deletion on test failure.
 
@@ -65,6 +65,17 @@ def test_this():
     assert False
 ```
 
+## Targeted pytest version
+
+Pytest internal API can change from major version, so this plugin versions are targeted at specific pytest versions.
+Do note that, consequently, plugin features can vary as well between major versions.
+
+| pytest-vcr-delete-on-fail | pytest  |
+|:-------------------------:|:-------:|
+|           1.1.0           |   6.*   |
+
+## Advanced usage
+
 The marker is actually quite flexible; this is the full signature:
 
 ```python
@@ -91,6 +102,11 @@ otherwise. If `True` the cassette with the automatically computed path will be d
 
 Only valid as named argument. It's `False` by default. If `True` no cassette will be deleted for that test. It's
 equivalent to passing `cassette_path_list=None`.
+
+###### cassette_path_func
+
+A function that takes the `nodes.Item` as only argument and that returns a cassette path or a list of cassette paths
+that will be deleted.
 
 ### Utilities
 
@@ -147,7 +163,7 @@ To run the test suite against all supported python version (they must be in path
 inv test-all-python-version
 ```
 
-To test the github workflow with [act](https://github.com/nektos/act):
+To test the GitHub workflow with [act](https://github.com/nektos/act):
 
 ```bash
 inv act-dev           # test the dev workflow

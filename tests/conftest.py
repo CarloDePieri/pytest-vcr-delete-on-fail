@@ -16,7 +16,7 @@ def clear_cassettes():
     yield
 
 
-def run_test(test_string: str, subfolder: str = "") -> int:
+def run_test(test_string: str, subfolder: str = "", delete_test: bool = True) -> int:
     """Write the test string to a temporary unique file and run pytest on it. Return the exit code."""
     # make sure the test file is unique - this will prevent caching
     test_folder = os.path.join("tests", subfolder)
@@ -28,7 +28,8 @@ def run_test(test_string: str, subfolder: str = "") -> int:
         f.write(test_string)
     ret_code = pytest.main([test_file_path])
     # NOTE: does NOT delete the subfolder, since there could be cassettes to test on there
-    os.remove(test_file_path)
+    if delete_test:
+        os.remove(test_file_path)
     return ret_code
 
 
@@ -37,14 +38,16 @@ def vcr_config():
     return {"record_mode": ["once"]}
 
 
-def passes(test_string: str, subfolder: str = "") -> bool:
+def passes(test_string: str, subfolder: str = "", delete_test: bool = True) -> bool:
     """Execute the test_string test and return True if it was successful."""
-    return run_test(test_string, subfolder) == 0
+    return run_test(test_string, subfolder, delete_test) == 0
 
 
-def fails(test_string: str, subfolder: str = "", error_code: int = 1) -> bool:
+def fails(
+    test_string: str, subfolder: str = "", error_code: int = 1, delete_test: bool = True
+) -> bool:
     """Execute the test_string test and return True if it failed with a specific error_code (1 by default)."""
-    return run_test(test_string, subfolder) == error_code
+    return run_test(test_string, subfolder, delete_test) == error_code
 
 
 def cassettes_remaining(test_string: str = None, path: str = None) -> int:

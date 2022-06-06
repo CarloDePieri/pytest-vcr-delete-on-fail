@@ -52,6 +52,7 @@ jobs:
         if: env.using_act == 'true'
         run: |
           echo "export PATH=\"/opt/hostedtoolcache/Python/${{ env.python_version }}/x64:/opt/hostedtoolcache/Python/${{ env.python_version }}/x64/bin:$PATH\"" >> /root/.bashrc
+
       - name: Upgrade pip.
         run: python -m pip install --upgrade pip
 
@@ -61,7 +62,13 @@ jobs:
       - name: Configure poetry
         run: poetry config virtualenvs.in-project true
 
-      - name: Install dependencies and test for all supported python version
+      - name: Install the first python venv
+        run: inv install -p latest
+
+      - name: Check formatting
+        run: inv checks
+
+      - name: Launch tests against all supported python versions
         run: inv test-all-python-version --coverage
 
       - name: Prepare the coveralls config.
@@ -70,4 +77,20 @@ jobs:
 
       - name: Upload coverage stats
         run: inv publish-coverage
+
+      - name: Fix source path in sonarqube coverage file.
+        if: ${{ !env.ACT }}
+        run: sed -i "s#`pwd`#/github/workspace#" coverage/sonarqube/coverage.xml
+
+      - uses: SonarSource/sonarqube-scan-action@master
+        if: ${{ !env.ACT }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - uses: CarloDePieri/sonarqube-scan-action@master
+        if: ${{ env.ACT }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 

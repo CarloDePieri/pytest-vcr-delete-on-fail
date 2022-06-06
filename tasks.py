@@ -1,3 +1,7 @@
+from contextlib import contextmanager
+import os
+
+
 from invoke import task
 
 
@@ -10,12 +14,12 @@ supported_python_versions = ["python3.7", "python3.8", "python3.9", "python3.10"
 default_python_bin = supported_python_versions[0]
 
 
-# If the most currently activated python version is desired, use 'inv install -p latest'
+# By default, target the OLDEST python version
+# If the most currently supported python version is desired, use 'inv install -p latest'
 @task
 def install(c, python=default_python_bin):
     if python == "latest":
-        # don't do anything here: poetry will use the default python version
-        pass
+        c.run("poetry env use {}".format(supported_python_versions[-1]))
     else:
         c.run("poetry env use {}".format(python))
     c.run("poetry install")
@@ -110,9 +114,13 @@ def get_coverage_test_command(m=None):
         marks = f" -m {m}"
     # This requires a workaround since the target it's a pytest plugin itself
     # See https://pytest-cov.readthedocs.io/en/latest/plugins.html
-    return f"COV_CORE_SOURCE={package_name} COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager " + \
-           f"poetry run pytest{marks} --cov={package_name} --cov-append --cov-report annotate:coverage/cov_annotate" + \
-           f" --cov-report html:coverage/cov_html"
+    return (
+        f"COV_CORE_SOURCE={package_name} COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager "
+        + f"poetry run pytest{marks} --cov={package_name} --cov-append --cov-report annotate:coverage/cov_annotate"
+        + f" --cov-report html:coverage/cov_html"
+        + f" --cov-report xml:coverage/sonarqube/coverage.xml"
+        + f" --junitxml=coverage/sonarqube/results.xml"
+    )
 
 
 @task()
@@ -124,6 +132,53 @@ def test_cov(c, m=None):
 @task(test_cov)
 def html_cov(c):
     c.run("xdg-open coverage/cov_html/index.html")
+
+
+@task()
+def checks(c):
+    c.run("poetry run black --check .")
+
+
+#
+# SONARQUBE
+#
+@contextmanager
+def patched_coverage_path(c) -> None:
+    """Make sure the path in the coverage file are mapped inside the sonar container."""
+    coverage_file = "coverage/sonarqube/coverage.xml"
+    pwd = os.getcwd().replace("/", "\\/")
+    src = "/usr/src".replace("/", "\\/")
+    c.run(f"sed -i 's#{pwd}#{src}#' {coverage_file}")
+    try:
+        yield
+    except Exception as e:
+        # Make sure the coverage path are restored even with an error
+        c.run(f"sed -i 's#{src}#{pwd}#' {coverage_file}")
+        raise e
+    c.run(f"sed -i 's#{src}#{pwd}#' {coverage_file}")
+
+
+@task()
+def sonar(c, no_branch=False):
+    """Run a sonarqube analysis. It needs docker installed and the .secrets file present."""
+    repo_full_path = os.getcwd()
+    no_branch_str = ""
+    if not no_branch:
+        branch = "`git rev-parse --abbrev-ref HEAD`"
+        no_branch_str = f'-e SONAR_SCANNER_OPTS="-Dsonar.branch.name={branch}"'
+
+    # Make sure coverage data is up-to-date
+    c.run(get_coverage_test_command(), pty=True, warn=True)
+
+    with patched_coverage_path(c):
+        c.run(
+            "docker run"
+            " --rm"
+            f" --env-file .secrets"
+            f" {no_branch_str}"
+            f" -v '{repo_full_path}:/usr/src'"
+            f" sonarsource/sonar-scanner-cli"
+        )
 
 
 #
@@ -139,7 +194,10 @@ def act_prod(c, cmd=""):
     if cmd == "":
         c.run("act -W .github/workflows/prod.yml", pty=True)
     elif cmd == "shell":
-        c.run(f"docker exec --env-file {act_secrets_file} -it {act_prod_ctx} bash", pty=True)
+        c.run(
+            f"docker exec --env-file {act_secrets_file} -it {act_prod_ctx} bash",
+            pty=True,
+        )
     elif cmd == "clean":
         c.run(f"docker rm -f {act_prod_ctx}", pty=True)
 
@@ -149,6 +207,9 @@ def act_dev(c, cmd=""):
     if cmd == "":
         c.run("act -W .github/workflows/dev.yml", pty=True)
     elif cmd == "shell":
-        c.run(f"docker exec --env-file {act_secrets_file} -it {act_dev_ctx} bash", pty=True)
+        c.run(
+            f"docker exec --env-file {act_secrets_file} -it {act_dev_ctx} bash",
+            pty=True,
+        )
     elif cmd == "clean":
         c.run(f"docker rm -f {act_dev_ctx}", pty=True)

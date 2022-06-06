@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - "main"
+      - "testing"
 
   push:
     branches:
@@ -61,6 +62,28 @@ jobs:
       - name: Configure poetry
         run: poetry config virtualenvs.in-project true
 
-      - name: Install dependencies and test for all supported python version
-        run: inv test-all-python-version
+      - name: Install the first python venv
+        run: inv install -p latest
+
+      - name: Check formatting
+        run: inv checks
+
+      - name: Launch tests against all supported python versions
+        run: inv test-all-python-version --coverage
+
+      - name: Fix source path in sonarqube coverage file.
+        if: ${{ !env.ACT }}
+        run: sed -i "s#`pwd`#/github/workspace#" coverage/sonarqube/coverage.xml
+
+      - uses: SonarSource/sonarqube-scan-action@master
+        if: ${{ !env.ACT }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - uses: CarloDePieri/sonarqube-scan-action@master
+        if: ${{ env.ACT }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
