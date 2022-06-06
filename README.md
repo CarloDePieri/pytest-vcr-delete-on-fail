@@ -15,14 +15,6 @@ This possibility leads to doubt and untrust towards the test suite, which is wro
 This plugin provides a pytest marker that solves the uncertainty: when a marked test fails its http requests cache will
 be purged, so that it can start fresh on the next run.
 
-## Targeted pytest version
-
-Pytest internal API can change from major version, so this plugin versions is targeted at specific pytest versions.
-
-| pytest-vcr-delete-on-fail | pytest  |
-|:-------------------------:|:-------:|
-|           1.1.0           |   6.*   |
-
 ## Install
 
 Simply run:
@@ -72,6 +64,17 @@ def test_this():
     requests.get("https://github.com")
     assert False
 ```
+
+## Targeted pytest version
+
+Pytest internal API can change from major version, so this plugin versions are targeted at specific pytest versions.
+Do note that, consequently, plugin features can vary as well between major versions.
+
+| pytest-vcr-delete-on-fail | pytest  |
+|:-------------------------:|:-------:|
+|           1.1.0           |   6.*   |
+
+## Advanced usage
 
 The marker is actually quite flexible; this is the full signature:
 

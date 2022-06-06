@@ -75,12 +75,24 @@ jobs:
         run: |
           echo "repo_token: ${{ secrets.COVERALLS_TOKEN }}" > .coveralls.yml
 
-      - uses: CarloDePieri/sonarqube-scan-action@master
-        if: env.using_act == 'false'
+      - name: Upload coverage stats
+        run: inv publish-coverage
+
+      - name: Fix source path in sonarqube coverage file.
+        if: ${{ !env.ACT }}
+        run: sed -i "s#`pwd`#/github/workspace#" coverage/sonarqube/coverage.xml
+
+      - uses: SonarSource/sonarqube-scan-action@master
+        if: ${{ !env.ACT }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: /home/runner/work/test-workflow/test-workflow/
 
-      - name: Upload coverage stats
-        run: inv publish-coverage
+      - uses: CarloDePieri/sonarqube-scan-action@master
+        if: ${{ env.ACT }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
