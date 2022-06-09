@@ -9,3 +9,4 @@ coverage
 .secrets
 dist
 .scannerwork/
+test-pytester-temp

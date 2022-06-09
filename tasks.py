@@ -63,7 +63,9 @@ def get_test_command(s=False, m=None, other_flags=""):
     capture = ""
     if s:
         capture = " -s"
-    return f"poetry run pytest{capture}{marks}{other_flags}"
+    return (
+        f"poetry run pytest{capture}{marks}{other_flags} --runpytest subprocess tests/"
+    )
 
 
 @task()
@@ -116,7 +118,8 @@ def get_coverage_test_command(m=None):
     # See https://pytest-cov.readthedocs.io/en/latest/plugins.html
     return (
         f"COV_CORE_SOURCE={package_name} COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager "
-        + f"poetry run pytest{marks} --cov={package_name} --cov-append --cov-report annotate:coverage/cov_annotate"
+        + f"poetry run pytest{marks} --runpytest subprocess --cov={package_name} --cov-append"
+        + f" --cov-report annotate:coverage/cov_annotate"
         + f" --cov-report html:coverage/cov_html"
         + f" --cov-report xml:coverage/sonarqube/coverage.xml"
         + f" --junitxml=coverage/sonarqube/results.xml"
