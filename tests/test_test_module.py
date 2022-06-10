@@ -81,28 +81,27 @@ class TestARemoteDebuggerInjecter:
 #
 #
 #
-@pytest.mark.vcr
 def test_it_should_allow_to_make_assertions_about_cassettes(
-    pytester, add_test_file, get_test_cassettes, default_conftest
+    pytester, add_test_file, get_test_cassettes, default_conftest, test_url
 ):
     """It should allow to make assertions about cassettes"""
     # language=python prefix="if True:" # IDE language injection
-    t_0_source = """
+    t_0_source = f"""
         import pytest
         import requests
             
         @pytest.mark.vcr
         def test_first():
-            assert requests.get("https://github.com").status_code == 200
+            assert requests.get("{test_url}").status_code == 200
         """
     t_0 = add_test_file(t_0_source, connect_debugger=False)
 
     # language=python prefix="if True:" # IDE language injection
-    t_1_source = """
+    t_1_source = f"""
         import requests
             
         def test_second():
-            assert requests.get("https://github.com").status_code == 200
+            assert requests.get("{test_url}").status_code == 200
         """
     t_1 = add_test_file(t_1_source, connect_debugger=False)
 
@@ -121,17 +120,17 @@ def test_it_should_allow_to_make_assertions_about_cassettes(
 #
 #
 def test_it_should_handle_assertions_about_nested_modules_cassettes(
-    pytester, add_test_file, get_test_cassettes, default_conftest
+    pytester, add_test_file, get_test_cassettes, default_conftest, test_url
 ):
     """It should handle assertions about nested modules cassettes."""
     # language=python prefix="if True:" # IDE language injection
-    t_0_source = """
+    t_0_source = f"""
         import pytest
         import requests
             
         @pytest.mark.vcr
         def test_first():
-            assert requests.get("https://github.com").status_code == 200
+            assert requests.get("{test_url}").status_code == 200
         """
     pytester.mkpydir("test_nested")
 
@@ -151,7 +150,7 @@ def test_it_should_handle_assertions_about_nested_modules_cassettes(
 #
 @pytest.mark.parametrize(
     "value,test_id",
-    [("True", "first"), ("True", "second"), ("", "third")],
+    [(True, "first"), (True, "second"), (False, "third")],
     ids=["first", "second", "third"],
 )
 def test_it_should_not_break_with_parametric_tests(
@@ -159,10 +158,10 @@ def test_it_should_not_break_with_parametric_tests(
 ):
     """It should not break with parametric tests."""
 
-    # language=python prefix="if True:" # IDE language injection
+    # language=python prefix="value: bool\nif True:" # IDE language injection
     source = f"""
         def test_this():
-            assert "{value}"
+            assert {value}
         """
     _ = add_test_file(source, connect_debugger=False)
 
@@ -188,3 +187,21 @@ def test_it_has_a_simple_way_to_check_for_a_file_existence(is_file, pytester):
     assert is_file(filename_a)
     assert is_file(filename_b)
     assert not is_file("not-there")
+
+
+#
+#
+#
+def test_it_should_offer_an_integrated_test_http_server(
+    pytester, add_test_file, test_url
+):
+    """It should offer an integrated test http server"""
+    # language=python prefix="if True:" # IDE language injection
+    source = f"""
+        import requests
+        
+        def test_this():
+            assert requests.get("{test_url}").status_code == 200
+        """
+    _ = add_test_file(source)
+    pytester.runpytest().assert_outcomes(passed=1)

@@ -316,6 +316,22 @@ toml = "*"
 testing = ["fields", "hunter", "process-tests", "six", "pytest-xdist", "virtualenv"]
 
 [[package]]
+name = "pytest-httpserver"
+version = "1.0.4"
+description = "pytest-httpserver is a httpserver for pytest"
+category = "dev"
+optional = false
+python-versions = ">=3.6,<4.0"
+
+[package.dependencies]
+Werkzeug = ">=2.0.0"
+
+[package.extras]
+dev = ["autopep8", "coverage", "flake8 (>4.0.0)", "ipdb", "mypy", "pytest-cov", "pytest", "reno", "requests", "sphinx", "sphinx-rtd-theme", "types-requests"]
+test = ["coverage", "flake8 (>4.0.0)", "mypy", "pytest-cov", "pytest", "requests", "types-requests"]
+doc = ["reno", "sphinx", "sphinx-rtd-theme"]
+
+[[package]]
 name = "pytest-order"
 version = "1.0.1"
 description = "pytest plugin to run your tests in a specific order"
@@ -480,6 +496,17 @@ cryptography = ">=3.4.7,<4.0.0"
 vcrpy = ">=4.1.1,<5.0.0"
 
 [[package]]
+name = "werkzeug"
+version = "2.1.2"
+description = "The comprehensive WSGI web application library."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+watchdog = ["watchdog"]
+
+[[package]]
 name = "wrapt"
 version = "1.14.1"
 description = "Module for decorators, wrappers and monkey patching."
@@ -515,7 +542,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "378fd6f83d92ff74d73b2c7c878cabf84c8ea6046d3766fd865c9f2e9afc5fc6"
+content-hash = "954aa7fc4295d714afa6eae1b57b94d61050c11b7788f3b7e981c27375a6d876"
 
 [metadata.files]
 atomicwrites = [
@@ -807,6 +834,10 @@ pytest-cov = [
     {file = "pytest-cov-2.12.1.tar.gz", hash = "sha256:261ceeb8c227b726249b376b8526b600f38667ee314f910353fa318caa01f4d7"},
     {file = "pytest_cov-2.12.1-py2.py3-none-any.whl", hash = "sha256:261bb9e47e65bd099c89c3edf92972865210c36813f80ede5277dceb77a4a62a"},
 ]
+pytest-httpserver = [
+    {file = "pytest_httpserver-1.0.4-py3-none-any.whl", hash = "sha256:17396350d7c0dec067bc8c5ceca7e1137aa0e3395468a9c179bdfc5ede9027a5"},
+    {file = "pytest_httpserver-1.0.4.tar.gz", hash = "sha256:6de464ba5f74628d6182ebbdcb56783edf2c9b0caf598dc35c11f014f24a3f0d"},
+]
 pytest-order = [
     {file = "pytest-order-1.0.1.tar.gz", hash = "sha256:5dd6b929fbd7eaa6d0ee07586f65c623babb0afe72b4843c5f15055d6b3b1b1f"},
     {file = "pytest_order-1.0.1-py3-none-any.whl", hash = "sha256:bbe6e63a8e23741ab3e810d458d1ea7317e797b70f9550512d77d6e9e8fd1bbb"},
@@ -917,6 +948,10 @@ vcrpy = [
 vcrpy-encrypt = [
     {file = "vcrpy-encrypt-0.9.1.tar.gz", hash = "sha256:58f01d79ffb037354519bca4b05c243502456949fb4b2bad845c7a3a5164ac64"},
     {file = "vcrpy_encrypt-0.9.1-py3-none-any.whl", hash = "sha256:e9df1158dfc41b673365fd77d42f19e21a9a394fdbe19bebec4ca25de9f8fe98"},
+]
+werkzeug = [
+    {file = "Werkzeug-2.1.2-py3-none-any.whl", hash = "sha256:72a4b735692dd3135217911cbeaa1be5fa3f62bffb8745c5215420a03dc55255"},
+    {file = "Werkzeug-2.1.2.tar.gz", hash = "sha256:1ce08e8093ed67d638d63879fd1ba3735817f7a80de3674d293f5984f25fb6e6"},
 ]
 wrapt = [
     {file = "wrapt-1.14.1-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:1b376b3f4896e7930f1f772ac4b064ac12598d1c38d04907e696cc4d794b43d3"},

@@ -150,3 +150,10 @@ def is_file(pytester):
         return (pytester.path / name).exists()
 
     return _is_file
+
+
+@pytest.fixture
+def test_url(httpserver):
+    """Serve a temporary HTTP server that responds with a 200 code on /. Return the url."""
+    httpserver.expect_request("/").respond_with_json({})
+    yield httpserver.url_for("/")

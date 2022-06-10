@@ -8,7 +8,7 @@ fail_on_call_test = """
     @pytest.mark.vcr
     @pytest.mark.vcr_delete_on_fail
     def test_this():
-        requests.get("https://github.com")
+        requests.get("{}")
         assert False
     """
 # language=python prefix="if True:" # IDE language injection
@@ -18,7 +18,7 @@ fail_on_setup_test = """
         
     @pytest.fixture
     def setup():
-        requests.get("https://github.com")
+        requests.get("{}")
         assert False
         yield
     
@@ -35,7 +35,7 @@ fail_on_teardown_test = """
     @pytest.fixture
     def teardown():
         yield
-        requests.get("https://github.com")
+        requests.get("{}")
         assert False
     
     @pytest.mark.vcr
@@ -111,19 +111,19 @@ class TestWhenDealingWithASingleTest:
     #
     #
     def test_should_not_delete_the_cassette_when_passing(
-        self, pytester, add_test_file, default_conftest
+        self, pytester, add_test_file, default_conftest, test_url
     ):
         """When dealing with a single test should not delete the cassette when passing."""
 
         # language=python prefix="if True:" # IDE language injection
-        source = """
+        source = f"""
             import pytest
             import requests
             
             @pytest.mark.vcr
             @pytest.mark.vcr_delete_on_fail
             def test_this():
-                requests.get("https://github.com")
+                requests.get("{test_url}")
                 assert True
                     """
 
@@ -150,9 +150,10 @@ class TestWhenDealingWithASingleTest:
         add_test_file,
         pytester,
         get_test_cassettes,
+        test_url,
     ):
         """When dealing with a single test should delete the cassette when failing."""
-        test = add_test_file(test_source, connect_debugger=False)
+        test = add_test_file(test_source.format(test_url), connect_debugger=False)
         result = pytester.runpytest()
         result.assert_outcomes(**outcome)
         assert not get_test_cassettes(test)
@@ -161,7 +162,7 @@ class TestWhenDealingWithASingleTest:
     #
     #
     def test_it_should_be_possible_to_express_a_custom_cassette_path(
-        self, pytester, add_test_file, get_test_cassettes, is_file
+        self, pytester, add_test_file, get_test_cassettes, is_file, test_url
     ):
         """When dealing with a single test it should be possible to express a custom cassette path."""
         custom_cassette = "tests/cassettes/custom.yaml"
@@ -177,7 +178,7 @@ class TestWhenDealingWithASingleTest:
             @pytest.mark.vcr_delete_on_fail(["{custom_cassette}"])
             def test_this():
                 with my_vcr.use_cassette("{custom_cassette}"):
-                    requests.get("https://github.com")
+                    requests.get("{test_url}")
                 assert False
             """
         _ = add_test_file(test_source, connect_debugger=False)
@@ -189,19 +190,19 @@ class TestWhenDealingWithASingleTest:
     #
     #
     def test_should_delete_the_cassette_even_with_nested_folders(
-        self, pytester, add_test_file, default_conftest, get_test_cassettes
+        self, pytester, add_test_file, default_conftest, get_test_cassettes, test_url
     ):
         """When dealing with a single test should delete the cassette even with nested folders."""
         pytester.mkpydir("submodule")
         # language=python prefix="if True:" # IDE language injection
-        test_source = """
+        test_source = f"""
             import pytest
             import requests
             
             @pytest.mark.vcr
             @pytest.mark.vcr_delete_on_fail
             def test_this():
-                requests.get("https://github.com")
+                requests.get("{test_url}")
                 assert False
             """
         test = add_test_file(
@@ -215,12 +216,12 @@ class TestWhenDealingWithASingleTest:
     #
     #
     def test_should_manage_multiple_markers(
-        self, pytester, add_test_file, default_conftest, get_test_cassettes
+        self, pytester, add_test_file, default_conftest, get_test_cassettes, test_url
     ):
         """When dealing with a single test should manage multiple markers."""
         test_name = "test_custom"
 
-        # language=python prefix="if True:" # IDE language injection
+        # language=python prefix="test_name: str\nif True:" # IDE language injection
         test_source = f"""        
             import pytest
             import requests
@@ -229,20 +230,20 @@ class TestWhenDealingWithASingleTest:
             my_vcr = vcr.VCR(record_mode="once")
             
             def get_additional_cassette(salt):
-                return "cassettes/{{}}/additional_{{}}.yaml".format("{test_name}", salt)
+                return f"cassettes/{test_name}/additional_{{salt}}.yaml"
             
             @pytest.mark.vcr
             @pytest.mark.vcr_delete_on_fail
             @pytest.mark.vcr_delete_on_fail([get_additional_cassette("a")])
             @pytest.mark.vcr_delete_on_fail([get_additional_cassette("b"), get_additional_cassette("c")])
             def test_this():
-                requests.get("https://github.com")
+                requests.get("{test_url}")
                 with my_vcr.use_cassette(get_additional_cassette("a")):
-                    requests.get("https://github.com")
+                    requests.get("{test_url}")
                 with my_vcr.use_cassette(get_additional_cassette("b")):
-                    requests.get("https://github.com")
+                    requests.get("{test_url}")
                 with my_vcr.use_cassette(get_additional_cassette("c")):
-                    requests.get("https://github.com")
+                    requests.get("{test_url}")
                 assert False
                 """
         test = add_test_file(source=test_source, connect_debugger=False, name=test_name)
