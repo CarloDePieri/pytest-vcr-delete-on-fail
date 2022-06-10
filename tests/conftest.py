@@ -147,6 +147,6 @@ def is_file(pytester):
         :param name: the file name
         :return: True if the file exists, False otherwise
         """
-        return len(list(pytester.path.glob(name))) > 0
+        return (pytester.path / name).exists()
 
     return _is_file
