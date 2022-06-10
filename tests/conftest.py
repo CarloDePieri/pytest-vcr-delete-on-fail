@@ -135,3 +135,18 @@ def vcr_config():
     return {"record_mode": ["once"]}
 """
     return pytester.makepyfile(conftest=source)
+
+
+@pytest.fixture
+def is_file(pytester):
+    """Check if a file exists in the pytester temporary folder."""
+
+    def _is_file(name: str) -> bool:
+        """Check if a file exists in the pytester temporary folder.
+
+        :param name: the file name
+        :return: True if the file exists, False otherwise
+        """
+        return len(list(pytester.path.glob(name))) > 0
+
+    return _is_file

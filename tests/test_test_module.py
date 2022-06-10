@@ -1,6 +1,10 @@
 import pytest
+from _pytest.config import ExitCode
 
 
+#
+#
+#
 def test_it_should_handle_automatically_more_than_one_test_file(
     pytester, add_test_file
 ):
@@ -40,6 +44,9 @@ def test_it_should_handle_automatically_more_than_one_test_file(
         )
 
 
+#
+#
+#
 class TestARemoteDebuggerInjecter:
     """Test: A remote debugger injecter..."""
 
@@ -53,10 +60,9 @@ class TestARemoteDebuggerInjecter:
         """
         add_test_file(t_0_source, connect_debugger=True, name="test_file")
 
-    def test_should_result_in_a_module(self, pytester):
+    def test_should_result_in_a_module(self, pytester, is_file):
         """A remote debugger injecter should result in a module."""
-        out = pytester.run("ls", "__init__.py").stdout.lines
-        assert out[0] == "__init__.py"
+        assert is_file("__init__.py")
 
     def test_should_inject_the_debugger_in_the_test_file(self, pytester):
         """A remote debugger injecter should inject the debugger in the test file."""
@@ -72,6 +78,9 @@ class TestARemoteDebuggerInjecter:
         assert "connect_debugger" in out[3]
 
 
+#
+#
+#
 @pytest.mark.vcr
 def test_it_should_allow_to_make_assertions_about_cassettes(
     pytester, add_test_file, get_test_cassettes, default_conftest
@@ -108,6 +117,9 @@ def test_second():
     assert not t_1_cassettes
 
 
+#
+#
+#
 def test_it_should_handle_assertions_about_nested_modules_cassettes(
     pytester, add_test_file, get_test_cassettes, default_conftest
 ):
@@ -132,3 +144,47 @@ def test_first():
 
     t_0_cassettes_names = map(lambda x: x.name, get_test_cassettes(t_0))
     assert "test_first.yaml" in t_0_cassettes_names
+
+
+#
+#
+#
+@pytest.mark.parametrize(
+    "value,test_id",
+    [(True, "first"), (True, "second"), (False, "third")],
+    ids=["first", "second", "third"],
+)
+def test_it_should_not_break_with_parametric_tests(
+    value, test_id, pytester, add_test_file
+):
+    """It should not break with parametric tests."""
+
+    source = f"""
+    def test_this():
+        assert {value}
+    """
+    _ = add_test_file(source, connect_debugger=False)
+
+    assert (
+        pytester.run(
+            "ls", f"test_it_should_not_break_with_parametric_tests[{test_id}].py"
+        ).ret
+        == ExitCode.OK
+    )
+
+    result = pytester.runpytest()
+    if value:
+        result.assert_outcomes(passed=1)
+    else:
+        result.assert_outcomes(failed=1)
+
+
+#
+#
+#
+def test_it_has_a_simple_way_to_check_for_a_file_existence(is_file, pytester):
+    """It has a simple way to check for a file existence"""
+    filename = "test-file"
+    pytester.run("touch", f"{filename}")
+    assert is_file(filename)
+    assert not is_file("not-there")
