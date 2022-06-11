@@ -1,8 +1,11 @@
-import textwrap
+from functools import partial
 from pathlib import Path
-from typing import List, Optional
+import textwrap
+from typing import List, Optional, Union, Any
 from pytest import Pytester
 from _pytest.fixtures import SubRequest
+from _pytest.pytester import RunResult as _RunResult
+from _pytest.pytester import Pytester as _Pytester
 
 # DEPRECATED OLD MODULE
 from tests.conftest_deprecated import *
@@ -156,3 +159,69 @@ def test_url(httpserver):
     """Serve a temporary HTTP server that responds with a 200 code on /. Return the url."""
     httpserver.expect_request("/").respond_with_json({})
     yield httpserver.url_for("/")
+
+
+@pytest.fixture
+def run_tests(pytester):
+    """Shorthand to run pytester tests."""
+
+    def _run(*args: Union[str, "os.PathLike[str]"], **kwargs: Any) -> RunResult:
+        return pytester.runpytest(*args, **kwargs)
+
+    return _run
+
+
+# Class definition used only to trick type checking. Actual object are of the original class with an injected
+# outcomes_are method. The stub file contains the method signature.
+class RunResult(_RunResult):
+    def outcomes_are(
+        self,
+        passed: int = 0,
+        skipped: int = 0,
+        failed: int = 0,
+        errors: int = 0,
+        xpassed: int = 0,
+        xfailed: int = 0,
+    ) -> bool:
+        # This is a stub method only used for type checking, no need to have an actual implementation.
+        pass
+
+
+# Class definition used only to trick type checking. Actual object are of the original class with a modified
+# runpytest method. The stub file contains the method signature.
+class Pytester(_Pytester):
+    def runpytest(
+        self, *args: Union[str, "os.PathLike[str]"], **kwargs: Any
+    ) -> RunResult:
+        # This is a stub method only used for type checking, no need to have an actual implementation.
+        pass
+
+
+@pytest.fixture
+def pytester(pytester: _Pytester) -> Pytester:
+    """Replace into the Pytester instance the runpytest method with a wrapper for the original one that returns
+    a modified RunResult instance. This object has an additional method called outcomes_are, which is a wrapper
+     for assert_outcomes that also returns True in the end, so that it can be used with the `assert` clause."""
+
+    def _outcomes_are(
+        result: RunResult,
+        passed: int = 0,
+        skipped: int = 0,
+        failed: int = 0,
+        errors: int = 0,
+        xpassed: int = 0,
+        xfailed: int = 0,
+    ) -> bool:
+        result.assert_outcomes(passed, skipped, failed, errors, xpassed, xfailed)
+        return True
+
+    def _runpytest(
+        self, *args: Union[str, "os.PathLike[str]"], **kwargs: Any
+    ) -> RunResult:
+        result = self._runpytest(*args, **kwargs)
+        result.outcomes_are = partial(_outcomes_are, result)
+        return result
+
+    pytester._runpytest = pytester.runpytest
+    pytester.runpytest = partial(_runpytest, pytester)
+    yield pytester

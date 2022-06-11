@@ -204,3 +204,37 @@ def test_it_should_offer_an_integrated_test_http_server(
         """
     _ = add_test_file(source)
     pytester.runpytest().assert_outcomes(passed=1)
+
+
+#
+#
+#
+def test_it_should_allow_to_use_the_assert_clause_when_checking_test_results(
+    pytester, add_test_file
+):
+    """It should allow to use the 'assert' clause when checking test results"""
+    # language=python prefix="if True:" # IDE language injection
+    source = """
+        def test_this():
+            assert True
+         
+        def test_this_as_well():
+            assert False
+        """
+    add_test_file(source)
+    result = pytester.runpytest()
+    assert result.outcomes_are(passed=1, failed=1)
+
+
+#
+#
+#
+def test_it_should_have_a_short_way_to_execute_pytester_tests(add_test_file, run_tests):
+    """It should have a short way to execute pytester tests"""
+    # language=python prefix="if True:" # IDE language injection
+    source = """
+        def test_this():
+            assert True
+        """
+    add_test_file(source)
+    assert run_tests().outcomes_are(passed=1)
