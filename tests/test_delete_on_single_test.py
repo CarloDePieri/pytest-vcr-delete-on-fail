@@ -11,6 +11,7 @@ fail_on_call_test = """
         requests.get("{}")
         assert False
     """
+# noinspection PyUnreachableCode, PyUnusedLocal
 # language=python prefix="if True:" # IDE language injection
 fail_on_setup_test = """
     import pytest
@@ -27,6 +28,7 @@ fail_on_setup_test = """
     def test_this(setup):
         assert True
     """
+# noinspection PyUnusedLocal
 # language=python prefix="if True:" # IDE language injection
 fail_on_teardown_test = """
     import pytest

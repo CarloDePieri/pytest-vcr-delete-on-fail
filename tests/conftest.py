@@ -4,8 +4,6 @@ from typing import List, Optional
 from pytest import Pytester
 from _pytest.fixtures import SubRequest
 
-import pytest
-
 # DEPRECATED OLD MODULE
 from tests.conftest_deprecated import *
 
@@ -31,13 +29,14 @@ def connect_to_debugger(tester: Pytester, enabled: bool = True) -> str:
     if enabled:
         tester.run("touch", "__init__.py")  # make sure this is treated as a package
 
+        # language=python prefix="debugger_port = 1\nif True:" # IDE language injection
         debugger_module = f"""
-        from functools import partial
-        import pydevd_pycharm
-
-        connect_debugger = partial(pydevd_pycharm.settrace, '{debugger_host}',
-                                   port={debugger_port}, stdoutToServer=True, stderrToServer=True)
-        """
+            from functools import partial
+            import pydevd_pycharm
+    
+            connect_debugger = partial(pydevd_pycharm.settrace, '{debugger_host}',
+                                       port={debugger_port}, stdoutToServer=True, stderrToServer=True)
+            """
 
         _ = tester.makepyfile(debugger=debugger_module)
         return """from .debugger import connect_debugger; connect_debugger()"""
@@ -126,14 +125,14 @@ def get_test_cassettes(pytester):
 @pytest.fixture
 def default_conftest(pytester):
     """Provide a conftest.py with the default confit for pytest-recording that will allow to record cassettes."""
-    # language=python  # IDE language injection
+    # language=python prefix="if True:" # IDE language injection
     source = """
-import pytest
-    
-@pytest.fixture(scope="module")
-def vcr_config():
-    return {"record_mode": ["once"]}
-"""
+        import pytest
+            
+        @pytest.fixture(scope="module")
+        def vcr_config():
+            return {"record_mode": ["once"]}
+        """
     return pytester.makepyfile(conftest=source)
 
 

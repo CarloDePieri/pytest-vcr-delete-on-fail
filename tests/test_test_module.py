@@ -1,5 +1,4 @@
 import pytest
-from _pytest.config import ExitCode
 
 
 #
@@ -14,21 +13,21 @@ def test_it_should_handle_automatically_more_than_one_test_file(
         def test_first():
             assert True
         """
-    t_0 = add_test_file(t_0_source, connect_debugger=False)
+    add_test_file(t_0_source, connect_debugger=False)
 
     # language=python prefix="if True:" # IDE language injection
     t_1_source = """
         def test_second():
             assert False
         """
-    t_1 = add_test_file(t_1_source, connect_debugger=False)
+    add_test_file(t_1_source, connect_debugger=False)
 
     # language=python prefix="if True:" # IDE language injection
     t_2_source = """
         def test_third():
             assert True
         """
-    t_2 = add_test_file(t_2_source, connect_debugger=False, name="test_custom")
+    add_test_file(t_2_source, connect_debugger=False, name="test_custom")
 
     result = pytester.runpytest()
     result.assert_outcomes(failed=1, passed=2)
