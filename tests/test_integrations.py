@@ -1,99 +1,79 @@
-import os
-import shutil
-
-import pytest
-import textwrap
-
-from tests.conftest import fails, cassettes_remaining
-
-
-@pytest.fixture
-def enc_teardown():
-    yield
-    shutil.rmtree("tests/enc")
-
-
-def test_it_can_integrate_with_vcrpy_encrypt(enc_teardown):
+#
+#
+#
+def test_it_can_integrate_with_vcrpy_encrypt(
+    add_test_file, test_url, pytester, get_test_cassettes
+):
     """It can integrate with vcrpy_encrypt"""
-    # Prepare the conftest to configure vcrpy_encrypt
-    conftest_string = textwrap.dedent(
+    pytester.mkpydir("test_enc")
+
+    # noinspection PyUnusedLocal, SpellCheckingInspection
+    # language=python prefix="if True:" # IDE language injection
+    conftest_source = """
+        import pytest
+        from vcrpy_encrypt import BaseEncryptedPersister
+        from pytest_vcr_delete_on_fail import get_default_cassette_path
+
+        # Configure vcrpy_encrypt
+        class MyEncryptedPersister(BaseEncryptedPersister):
+            encryption_key: bytes = b"sixteensecretkey"
+            should_output_clear_text_as_well = True
+            clear_text_suffix = ".custom_clear"
+            encoded_suffix = ".custom_enc"
+
+        def pytest_recording_configure(config, vcr):
+            vcr.register_persister(MyEncryptedPersister)
+
+        # Configure pytest_recording
+        @pytest.fixture(scope="module")
+        def vcr_config():
+            return {"record_mode": ["once"]}
+
+        # Define two helper functions that will take the default path and append vcrpy_encrypt suffixes
+        def get_encrypted_cassette(item) -> str:
+            default = get_default_cassette_path(item)
+            return f"{default}{MyEncryptedPersister.encoded_suffix}"
+        def get_clear_text_cassette(item) -> str:
+            default = get_default_cassette_path(item)
+            return f"{default}{MyEncryptedPersister.clear_text_suffix}"
+
+        # Define a shorthand for the vcr_delete_on_fail marker
+        vcr_delete_on_fail = pytest.mark.vcr_delete_on_fail([get_encrypted_cassette,
+                                                                     get_clear_text_cassette])
         """
-                import pytest
-                from vcrpy_encrypt import BaseEncryptedPersister
-                from pytest_vcr_delete_on_fail import get_default_cassette_path
+    add_test_file(conftest_source, name="test_enc/conftest")
 
-                # Configure vcrpy_encrypt
-                class MyEncryptedPersister(BaseEncryptedPersister):
-                    encryption_key: bytes = b"sixteensecretkey"
-                    should_output_clear_text_as_well = True
-                    clear_text_suffix = ".custom_clear"
-                    encoded_suffix = ".custom_enc"
+    # noinspection PyUnresolvedReferences
+    # language=python prefix="if True:" # IDE language injection
+    test_source = f"""
+        import pytest
+        import requests
+        from test_enc.conftest import vcr_delete_on_fail
 
-                def pytest_recording_configure(config, vcr):
-                    vcr.register_persister(MyEncryptedPersister)
-
-                # Configure pytest_recording
-                @pytest.fixture(scope="module")
-                def vcr_config():
-                    return {"record_mode": ["once"]}
-
-                # Define two helper functions that will take the default path and append vcrpy_encrypt suffixes
-                def get_encrypted_cassette(item) -> str:
-                    default = get_default_cassette_path(item)
-                    return f"{default}{MyEncryptedPersister.encoded_suffix}"
-                def get_clear_text_cassette(item) -> str:
-                    default = get_default_cassette_path(item)
-                    return f"{default}{MyEncryptedPersister.clear_text_suffix}"
-
-                # Define a shorthand for the vcr_delete_on_fail marker
-                vcr_delete_on_fail = pytest.mark.vcr_delete_on_fail([get_encrypted_cassette,
-                                                                             get_clear_text_cassette])
-                """
-    )
-    folder = "tests/enc"
-    if not os.path.isdir(folder):
-        os.mkdir(folder)
-        with open(f"{folder}/__init__.py", "w") as f:
-            f.write("")
-    with open(f"{folder}/conftest.py", "w") as f:
-        f.write(conftest_string)
-
-    test_string = textwrap.dedent(
+        @pytest.mark.vcr
+        @vcr_delete_on_fail
+        def test_this():
+            requests.get("{test_url}")
+            assert False
         """
-                import pytest
-                import requests
-                from tests.enc.conftest import vcr_delete_on_fail
+    test = add_test_file(test_source, name="test_enc/test_enc")
 
-                @pytest.mark.vcr
-                @vcr_delete_on_fail
-                def test_this():
-                    requests.get("https://github.com")
-                    assert False
-                """
-    )
-    assert fails(test_string, subfolder="enc")
-    assert (
-        cassettes_remaining(path=f"{folder}/cassettes/test_temp_{hash(test_string)}")
-        == 0
-    )
+    result = pytester.runpytest()
+
+    assert result.outcomes_are(failed=1)
+    assert not get_test_cassettes(test)
 
 
-@pytest.fixture
-def class_setup_teardown():
-    yield
-    shutil.rmtree("tests/class_setup")
-
-
-@pytest.fixture
-def class_teardown_teardown():
-    yield
-    shutil.rmtree("tests/class_teardown")
-
-
-def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
+#
+#
+#
+def test_it_can_integrate_with_the_class_setup_workflow(
+    add_test_file, test_url, run_tests, get_test_cassettes
+):
     """it can integrate with the class setup workflow"""
-    test_string = textwrap.dedent(
-        """
+    # noinspection PyUnusedLocal
+    # language=python prefix="if True:" # IDE language injection
+    test_source = f"""
         import os
         import pytest
         import requests
@@ -104,9 +84,9 @@ def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
         def get_setup_cassette_path(node) -> str:
             # determine the class setup cassette path from the node
             el = node.nodeid.split("::")
-            name = f"{el[1]}_setup"
+            name = f"{{el[1]}}_setup"
             path = os.path.join(os.path.dirname(el[0]), "cassettes", os.path.basename(el[0]).replace(".py", ""))
-            return f"{path}/{name}.yaml"
+            return f"{{path}}/{{name}}.yaml"
 
         @pytest.fixture(scope="class")
         def vcr_setup(request):
@@ -130,27 +110,29 @@ def test_it_can_integrate_with_the_class_setup_workflow(class_setup_teardown):
             @pytest.fixture(scope="class", autouse=True)
             def setup(self, request, vcr_setup):
                 # class scoped setup, with vcr_setup fixture
-                request.cls.value = requests.get("https://github.com")
+                request.cls.value = requests.get("{test_url}")
                 raise Exception
 
             def test_failing_at_class_setup(self):
+                # This won't play, since it will fail at setup time
                 assert self.value.status_code == 200
-                requests.get("https://gitlab.com")
         """
-    )
-    assert fails(test_string, "class_setup")
-    assert (
-        cassettes_remaining(
-            path=f"tests/class_setup/cassettes/test_temp_{hash(test_string)}"
-        )
-        == 0
-    )
+    test = add_test_file(test_source)
+
+    assert run_tests().outcomes_are(errors=1)
+    assert not get_test_cassettes(test)
 
 
-def test_it_integrates_with_the_class_teardown_workflow(class_teardown_teardown):
+#
+#
+#
+def test_it_integrates_with_the_class_teardown_workflow(
+    add_test_file, default_conftest, test_url, run_tests, get_test_cassettes
+):
     """it integrates with the class teardown workflow"""
-    test_string = textwrap.dedent(
-        """
+    # noinspection PyUnusedLocal
+    # language=python prefix="if True:" # IDE language injection
+    test_source = f"""
         import os
         import pytest
         import requests
@@ -161,9 +143,9 @@ def test_it_integrates_with_the_class_teardown_workflow(class_teardown_teardown)
         def get_teardown_cassette_path(node) -> str:
             # determine the class teardown cassette path from the node
             el = node.nodeid.split("::")
-            name = f"{el[1]}_teardown"
+            name = f"{{el[1]}}_teardown"
             path = os.path.join(os.path.dirname(el[0]), "cassettes", os.path.basename(el[0]).replace(".py", ""))
-            return f"{path}/{name}.yaml"
+            return f"{{path}}/{{name}}.yaml"
 
         @pytest.fixture(scope="class")
         def vcr_teardown(request):
@@ -185,22 +167,18 @@ def test_it_integrates_with_the_class_teardown_workflow(class_teardown_teardown)
         class TestATestCollection:
 
             @pytest.fixture(scope="class", autouse=True)
-            def teardown(self, vcr_teardown):
+            def teardown(self, vcr_teardown, request):
                 yield
                 # class scoped teardown, with vcr_teardown fixture
-                r = requests.get("https://github.com")
-                if self.value.status_code == r.status_code:
-                    raise Exception
+                r = requests.get("{test_url}")
+                raise Exception
 
             def test_failing_at_class_teardown(self, request):
-                r = requests.get("https://gitlab.com")
-                request.cls.value = r
+                r = requests.get("{test_url}")
+                assert r.status_code == 200
         """
-    )
-    assert fails(test_string, "class_teardown")
-    assert (
-        cassettes_remaining(
-            path=f"tests/class_teardown/cassettes/test_temp_{hash(test_string)}"
-        )
-        == 0
-    )
+
+    test = add_test_file(test_source)
+
+    assert run_tests().outcomes_are(errors=1, passed=1)
+    assert not get_test_cassettes(test)

@@ -1,3 +1,5 @@
+import pytest
+
 from functools import partial
 from pathlib import Path
 import textwrap
@@ -6,9 +8,6 @@ from pytest import Pytester
 from _pytest.fixtures import SubRequest
 from _pytest.pytester import RunResult as _RunResult
 from _pytest.pytester import Pytester as _Pytester
-
-# DEPRECATED OLD MODULE
-from tests.conftest_deprecated import *
 
 
 pytest_plugins = "pytester"
@@ -161,11 +160,14 @@ def test_url(httpserver):
     yield httpserver.url_for("/")
 
 
+PathLike = "os.PathLike[str]"
+
+
 @pytest.fixture
 def run_tests(pytester):
     """Shorthand to run pytester tests."""
 
-    def _run(*args: Union[str, "os.PathLike[str]"], **kwargs: Any) -> RunResult:
+    def _run(*args: Union[str, PathLike], **kwargs: Any) -> RunResult:
         return pytester.runpytest(*args, **kwargs)
 
     return _run
@@ -187,12 +189,12 @@ class RunResult(_RunResult):
         pass
 
 
-# Class definition used only to trick type checking. Actual object are of the original class with a modified
+# Class definition used only to trick type checking. Actual object are of the original Pytester class with a modified
 # runpytest method. The stub file contains the method signature.
+#
+# noinspection PyFinal
 class Pytester(_Pytester):
-    def runpytest(
-        self, *args: Union[str, "os.PathLike[str]"], **kwargs: Any
-    ) -> RunResult:
+    def runpytest(self, *args: Union[str, PathLike], **kwargs: Any) -> RunResult:
         # This is a stub method only used for type checking, no need to have an actual implementation.
         pass
 
@@ -215,9 +217,7 @@ def pytester(pytester: _Pytester) -> Pytester:
         result.assert_outcomes(passed, skipped, failed, errors, xpassed, xfailed)
         return True
 
-    def _runpytest(
-        self, *args: Union[str, "os.PathLike[str]"], **kwargs: Any
-    ) -> RunResult:
+    def _runpytest(self, *args: Union[str, PathLike], **kwargs: Any) -> RunResult:
         result = self._runpytest(*args, **kwargs)
         result.outcomes_are = partial(_outcomes_are, result)
         return result
