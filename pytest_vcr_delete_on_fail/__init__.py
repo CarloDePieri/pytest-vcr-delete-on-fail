@@ -3,4 +3,5 @@ from pytest_vcr_delete_on_fail.main import (
     has_class_scoped_setup_failed,
     has_class_scoped_teardown_failed,
     delete_on_fail,
+    vcr_and_dof,
 )

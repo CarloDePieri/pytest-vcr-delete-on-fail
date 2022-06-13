@@ -1,9 +1,10 @@
 import os
-from contextlib import contextmanager
-from typing import Optional, Set, Dict, Any, List, Union, Callable
-
 import pytest
 import re
+
+from contextlib import contextmanager
+from typing import Optional, Set, Dict, Any, List, Union, Callable
+from vcr.config import VCR
 
 from _pytest.mark import Mark
 from _pytest.nodes import Item
@@ -225,3 +226,19 @@ def delete_on_fail(cassettes: List[str], skip: bool = False):
                 if isinstance(cassette, str):
                     delete_cassette(cassette)
         raise e
+
+
+@contextmanager
+def vcr_and_dof(
+    vcr: VCR,
+    cassette: str,
+    skip_delete: bool = False,
+    additional_delete: List[str] = [],
+    **kwargs,
+):
+    """Context manager that acts as a wrapper for VCR.use_cassette and delete_on_fail: it allows to record
+    cassettes that will be deleted on failure."""
+    with delete_on_fail(
+        [cassette] + additional_delete, skip=skip_delete
+    ), vcr.use_cassette(cassette, **kwargs) as v:
+        yield v
