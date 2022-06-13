@@ -141,6 +141,11 @@ def html_cov(c):
 @task()
 def checks(c):
     c.run("poetry run black --check .")
+    print("")
+    c.run(
+        "poetry run mypy pytest_vcr_delete_on_fail/",
+        pty=True,
+    )
 
 
 #
