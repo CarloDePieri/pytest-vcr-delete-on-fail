@@ -80,38 +80,51 @@ def test_it_can_integrate_with_the_class_setup_workflow(
         import vcr
         from typing import Union
         from pytest_vcr_delete_on_fail import has_class_scoped_setup_failed
+        from contextlib import contextmanager
 
         def get_setup_cassette_path(node) -> str:
             # determine the class setup cassette path from the node
             el = node.nodeid.split("::")
-            name = f"{{el[1]}}_setup"
+            name = f"{{el[1]}}.__setup__"
             path = os.path.join(os.path.dirname(el[0]), "cassettes", os.path.basename(el[0]).replace(".py", ""))
             return f"{{path}}/{{name}}.yaml"
 
         @pytest.fixture(scope="class")
         def vcr_setup(request):
-            # This fixture records request made during the class scoped function that uses it
+            # This fixture returns a context manager that records network request to a class setup cassette
             cassette_path = get_setup_cassette_path(request.node)
             setup_vcr = vcr.VCR(record_mode=["once"])
-            with setup_vcr.use_cassette(cassette_path):
-                yield
+                
+            @contextmanager
+            def _wrapped(**kwargs):
+                with setup_vcr.use_cassette(cassette_path, **kwargs) as v:
+                    yield v
+            
+            return _wrapped
                 
         def get_class_setup_cassette_if_failed(item) -> Union[str, None]:
             # check if the class has been flagged with a failed class setup
             if has_class_scoped_setup_failed(item):
-                # return the class setup cassette path
+                # return the class setup cassette path; this could, if needed, return a list of all class cassettes
                 return get_setup_cassette_path(item)
             # otherwise return None
+            
+        # This marker is responsible for the deletion of the setup cassette on fail
+        delete_setup_on_fail = pytest.mark.vcr_delete_on_fail(cassette_path_func=get_class_setup_cassette_if_failed)
 
         @pytest.mark.vcr
-        @pytest.mark.vcr_delete_on_fail([get_class_setup_cassette_if_failed], delete_default=True)
+        @delete_setup_on_fail
         class TestATestCollection:
 
             @pytest.fixture(scope="class", autouse=True)
             def setup(self, request, vcr_setup):
-                # class scoped setup, with vcr_setup fixture
-                request.cls.value = requests.get("{test_url}")
-                raise Exception
+                with vcr_setup():
+                    # Everything in here will be recorded on the setup cassette
+                    request.cls.value = requests.get("{test_url}")
+                    raise Exception
+                # Do note that this yield should be outside the vcr_setup block, otherwise every network request
+                # performed by this class tests will be recorded in the setup cassette
+                yield
 
             def test_failing_at_class_setup(self):
                 # This won't play, since it will fail at setup time
@@ -139,39 +152,50 @@ def test_it_integrates_with_the_class_teardown_workflow(
         import vcr
         from typing import Union
         from pytest_vcr_delete_on_fail import has_class_scoped_teardown_failed
+        from contextlib import contextmanager
 
         def get_teardown_cassette_path(node) -> str:
             # determine the class teardown cassette path from the node
             el = node.nodeid.split("::")
-            name = f"{{el[1]}}_teardown"
+            name = f"{{el[1]}}.__teardown__"
             path = os.path.join(os.path.dirname(el[0]), "cassettes", os.path.basename(el[0]).replace(".py", ""))
             return f"{{path}}/{{name}}.yaml"
 
         @pytest.fixture(scope="class")
         def vcr_teardown(request):
-            # This fixture records request made during the class scoped function that uses it
+            # This fixture returns a context manager that records network request to a class teardown cassette
             cassette_path = get_teardown_cassette_path(request.node)
             teardown_vcr = vcr.VCR(record_mode=["once"])
-            with teardown_vcr.use_cassette(cassette_path):
-                yield
+                
+            @contextmanager
+            def _wrapped(**kwargs):
+                with teardown_vcr.use_cassette(cassette_path, **kwargs) as v:
+                    yield v
+            
+            return _wrapped
 
         def get_class_teardown_cassette_if_failed(item) -> Union[str, None]:
             # check if the class has been flagged with a failed class teardown
             if has_class_scoped_teardown_failed(item):
-                # return the class teardown cassette path
+                # return the class teardown cassette path; this could, if needed, return a list of all class cassettes
                 return get_teardown_cassette_path(item)
             # otherwise return None
+            
+        # This marker is responsible for the deletion of the teardown cassette on fail
+        delete_teardown_on_fail = pytest.mark.vcr_delete_on_fail(cassette_path_func=get_class_teardown_cassette_if_failed)
 
         @pytest.mark.vcr
-        @pytest.mark.vcr_delete_on_fail([get_class_teardown_cassette_if_failed], delete_default=True)
+        @pytest.mark.vcr_delete_on_fail  # this will delete the test cassette
+        @delete_teardown_on_fail
         class TestATestCollection:
 
             @pytest.fixture(scope="class", autouse=True)
             def teardown_phase(self, vcr_teardown, request):
                 yield
-                # class scoped teardown, with vcr_teardown fixture
-                r = requests.get("{test_url}")
-                raise Exception
+                with vcr_teardown():
+                    # Everything in here will be recorded on the teardown cassette
+                    r = requests.get("{test_url}")
+                    raise Exception
 
             def test_failing_at_class_teardown(self, request):
                 r = requests.get("{test_url}")
