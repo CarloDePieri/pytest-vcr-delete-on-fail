@@ -167,7 +167,7 @@ def test_it_integrates_with_the_class_teardown_workflow(
         class TestATestCollection:
 
             @pytest.fixture(scope="class", autouse=True)
-            def teardown(self, vcr_teardown, request):
+            def teardown_phase(self, vcr_teardown, request):
                 yield
                 # class scoped teardown, with vcr_teardown fixture
                 r = requests.get("{test_url}")

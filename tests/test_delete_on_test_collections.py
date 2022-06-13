@@ -153,7 +153,7 @@ class TestATestCollections:
             @pytest.mark.order(1)
             class TestSetToFail:
                 @pytest.fixture(scope="class", autouse=True)
-                def setup(self):
+                def setup_phase(self):
                     raise Exception
                 @pytest.mark.xfail
                 def test_should_fail_at_class_setup(self):
@@ -162,7 +162,7 @@ class TestATestCollections:
             @pytest.mark.order(2)
             class TestAlsoSetToFail:
                 @pytest.fixture(scope="class", autouse=True)
-                def teardown(self):
+                def teardown_phase(self):
                     yield
                     raise Exception
                 @pytest.mark.xfail
