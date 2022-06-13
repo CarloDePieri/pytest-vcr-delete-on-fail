@@ -238,3 +238,23 @@ def test_it_should_have_a_short_way_to_execute_pytester_tests(add_test_file, run
         """
     add_test_file(source)
     assert run_tests().outcomes_are(passed=1)
+
+
+#
+#
+#
+def test_it_should_recognize_when_a_failure_is_intended(
+    add_test_file, run_tests, has_fail_with_comment
+):
+    """It should recognize when a failure is intended"""
+    fail_msg = "failure intended!"
+    # language=python prefix="if True:" # IDE language injection
+    source = f"""
+        def test_this():
+            assert False  # {fail_msg}
+        """
+    add_test_file(source)
+    result = run_tests()
+    assert result.outcomes_are(failed=1)
+    assert has_fail_with_comment(result, fail_msg)
+    assert result.has_fail_with_comment(fail_msg)

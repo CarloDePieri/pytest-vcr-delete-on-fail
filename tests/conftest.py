@@ -1,10 +1,11 @@
 import pytest
+import re
+import textwrap
 
 from functools import partial
 from pathlib import Path
-import textwrap
-from typing import List, Optional, Union, Any
 from pytest import Pytester
+from typing import List, Optional, Union, Any
 from _pytest.fixtures import SubRequest
 from _pytest.pytester import RunResult as _RunResult
 from _pytest.pytester import Pytester as _Pytester
@@ -175,6 +176,8 @@ def run_tests(pytester):
 
 # Class definition used only to trick type checking. Actual object are of the original class with an injected
 # outcomes_are method. The stub file contains the method signature.
+#
+# noinspection PyFinal
 class RunResult(_RunResult):
     def outcomes_are(
         self,
@@ -185,6 +188,10 @@ class RunResult(_RunResult):
         xpassed: int = 0,
         xfailed: int = 0,
     ) -> bool:
+        # This is a stub method only used for type checking, no need to have an actual implementation.
+        pass
+
+    def has_fail_with_comment(self, comment: str) -> bool:
         # This is a stub method only used for type checking, no need to have an actual implementation.
         pass
 
@@ -199,11 +206,33 @@ class Pytester(_Pytester):
         pass
 
 
+def _has_fail_with_comment(result: RunResult, comment: str) -> bool:
+    """Make sure that in the given RunResult there's a failure with the given comment.
+
+    Used to make sure a test failed with the intended 'assert False'."""
+
+    pattern = re.compile(">( *)assert False( *)#(?P<comment>.*)")
+    found = False
+    for line in result.outlines:
+        match = pattern.match(line)
+        if match and match.group("comment").strip() == comment.strip():
+            found = True
+            break
+    return found
+
+
+@pytest.fixture
+def has_fail_with_comment():
+    return _has_fail_with_comment
+
+
 @pytest.fixture
 def pytester(pytester: _Pytester) -> Pytester:
     """Replace into the Pytester instance the runpytest method with a wrapper for the original one that returns
     a modified RunResult instance. This object has an additional method called outcomes_are, which is a wrapper
-     for assert_outcomes that also returns True in the end, so that it can be used with the `assert` clause."""
+    for assert_outcomes that also returns True in the end, so that it can be used with the `assert` clause. It
+    also has a method called has_fail_with_comment that checks that the report has a test failed with a specific
+    assert False clause."""
 
     def _outcomes_are(
         result: RunResult,
@@ -220,6 +249,7 @@ def pytester(pytester: _Pytester) -> Pytester:
     def _runpytest(self, *args: Union[str, PathLike], **kwargs: Any) -> RunResult:
         result = self._runpytest(*args, **kwargs)
         result.outcomes_are = partial(_outcomes_are, result)
+        result.has_fail_with_comment = partial(_has_fail_with_comment, result)
         return result
 
     pytester._runpytest = pytester.runpytest
