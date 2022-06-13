@@ -206,3 +206,63 @@ def test_it_integrates_with_the_class_teardown_workflow(
 
     assert run_tests().outcomes_are(errors=1, passed=1)
     assert not get_test_cassettes(test)
+
+
+#
+#
+#
+def test_it_should_support_setup_logic_via_our_context_manager(
+    add_test_file, test_url, run_tests, get_test_cassettes
+):
+    """It should support setup logic via our context manager"""
+    # language=python prefix="if True:" # IDE language injection
+    test_source = f"""
+        import pytest
+        import requests
+        import vcr
+        import os
+        from pytest_vcr_delete_on_fail import vcr_and_dof
+        from contextlib import contextmanager
+    
+        my_vcr = vcr.VCR(record_mode="once")
+
+        # The following fixture returns a context manager that records network request to a class setup cassette
+        # It will also delete said cassette if an exception is raised
+        @pytest.fixture(scope="class")
+        def vcr_and_dof_setup(request):
+            el = request.node.nodeid.split("::")
+            name = f"{{el[1]}}.__setup__"
+            path = os.path.join(os.path.dirname(el[0]), "cassettes", os.path.basename(el[0]).replace(".py", ""))
+            cassette_path = f"{{path}}/{{name}}.yaml"
+                
+            @contextmanager
+            def _wrapped(**kwargs):
+                with vcr_and_dof(my_vcr, cassette_path, **kwargs) as v:
+                    yield v
+            
+            return _wrapped
+
+        class TestATestCollection:
+
+            @pytest.fixture(scope="class", autouse=True)
+            def setup(self, request, vcr_and_dof_setup):
+                with vcr_and_dof_setup(
+                   additional_cassettes=[],  # if needed, all class cassettes can be deleted on fail by adding them here
+                ):
+                    # Everything in here will be recorded on the setup cassette
+                    # Any exception will immediately delete the cassette
+                    request.cls.value = requests.get("{test_url}")
+                    raise Exception
+                # Do note that this yield should be outside the vcr_and_dof_setup block, otherwise every network
+                # request performed by this class tests will be recorded in the setup cassette. Also, every exception
+                # will trigger the cassette deletion
+                yield
+
+            def test_failing_at_class_setup(self):
+                # This won't play, since it will fail at setup time
+                assert self.value.status_code == 200
+        """
+    test = add_test_file(test_source)
+
+    assert run_tests().outcomes_are(errors=1)
+    assert not get_test_cassettes(test)
