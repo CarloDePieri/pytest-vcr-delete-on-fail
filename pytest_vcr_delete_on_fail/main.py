@@ -1,4 +1,5 @@
 import os
+from contextlib import contextmanager
 from typing import Optional, Set, Dict, Any, List, Union, Callable
 
 import pytest
@@ -211,3 +212,16 @@ def pytest_configure(config):
         f" {cassette_path_list_str} is provided, no cassette will be deleted at all. This marker can be"
         f" used multiple times.",
     )
+
+
+@contextmanager
+def delete_on_fail(cassettes: List[str], skip: bool = False):
+    """Context manager that will delete the specified cassette(s) if an exception is raised."""
+    try:
+        yield
+    except (Exception,) as e:
+        if not skip:
+            for cassette in cassettes:
+                if isinstance(cassette, str):
+                    delete_cassette(cassette)
+        raise e
