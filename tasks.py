@@ -119,7 +119,6 @@ def get_coverage_test_command(m=None):
     return (
         f"COV_CORE_SOURCE={package_name} COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager "
         + f"poetry run pytest{marks} --runpytest subprocess --cov={package_name} --cov-append"
-        + " --cov-report annotate:coverage/cov_annotate"
         + " --cov-report html:coverage/cov_html"
         + " --cov-report xml:coverage/sonarqube/coverage.xml"
         + " --junitxml=coverage/sonarqube/results.xml"

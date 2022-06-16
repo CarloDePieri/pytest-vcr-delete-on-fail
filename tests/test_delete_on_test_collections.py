@@ -144,13 +144,25 @@ class TestATestCollections:
     #
     #
     #
-    def test_should_mark_failed_class_setup_or_teardown(self, add_test_file, run_tests):
-        """A test collections should mark failed class setup or teardown."""
+    def test_should_tag_failed_class_setup_or_teardown(self, add_test_file, run_tests):
+        """A test collections should tag failed class setup or teardown."""
         # language=python prefix="if True:" # IDE language injection
         test_source = """
             import pytest
-    
+            from _pytest.python import Function
+            from pytest_vcr_delete_on_fail import has_class_scoped_setup_failed, has_class_scoped_teardown_failed
+            
             @pytest.mark.order(1)
+            class TestSetToPass:
+                @pytest.fixture(scope="class", autouse=True)
+                def setup_and_teardown_phase(self):
+                    assert True
+                    yield
+                    assert True
+                def test_should_pass(self):
+                    pass
+            
+            @pytest.mark.order(2)
             class TestSetToFail:
                 @pytest.fixture(scope="class", autouse=True)
                 def setup_phase(self):
@@ -158,8 +170,8 @@ class TestATestCollections:
                 @pytest.mark.xfail
                 def test_should_fail_at_class_setup(self):
                     pass
-    
-            @pytest.mark.order(2)
+            
+            @pytest.mark.order(3)
             class TestAlsoSetToFail:
                 @pytest.fixture(scope="class", autouse=True)
                 def teardown_phase(self):
@@ -168,20 +180,30 @@ class TestATestCollections:
                 @pytest.mark.xfail
                 def test_should_fail_at_class_teardown(self):
                     pass
-    
-            # NOTE: this must be run together with and after the TestSetToFail and TestAlsoSetToFail classes since it 
+            
+            @pytest.fixture
+            def get_session_test_by_name(request):
+                def _get_session_test_by_name(name: str) -> Function:
+                    return next(filter(lambda x: x.name == name, request.session.items))
+                return _get_session_test_by_name
+                
+            # NOTE: this must be run together with and after the other test classes since it 
             # checks the recorded reports on THOSE tests
-            @pytest.mark.order(3)
-            def test_failing_at_setup_time_should_have_a_report_claiming_so(request):
-                cls = list(filter(lambda x: x.name == "test_should_fail_at_class_setup", request.session.items))[0].cls
-                assert cls.cls_setup_failed
-                cls = list(
-                    filter(
-                        lambda x: x.name == "test_should_fail_at_class_teardown",
-                         request.session.items
-                    )
-                )[0].cls
-                assert cls.cls_teardown_failed
+            @pytest.mark.order(4)
+            def test_class_tags(get_session_test_by_name):
+                passed = get_session_test_by_name("test_should_pass")
+                assert not passed.cls.cls_setup_failed
+                assert not passed.cls.cls_teardown_failed
+                assert not has_class_scoped_setup_failed(passed)
+                assert not has_class_scoped_teardown_failed(passed)
+                
+                failed_setup = get_session_test_by_name("test_should_fail_at_class_setup")
+                assert failed_setup.cls.cls_setup_failed
+                assert has_class_scoped_setup_failed(failed_setup)
+                
+                failed_teardown = get_session_test_by_name("test_should_fail_at_class_teardown")
+                assert failed_teardown.cls.cls_teardown_failed
+                assert has_class_scoped_teardown_failed(failed_teardown)
             """
         add_test_file(test_source)
-        assert run_tests().outcomes_are(xfailed=2, xpassed=1, passed=1)
+        assert run_tests().outcomes_are(xfailed=2, xpassed=1, passed=2)

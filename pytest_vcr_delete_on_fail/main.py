@@ -52,10 +52,9 @@ def pytest_runtest_makereport(
     # this gets rewritten, but since a failure stop a phase, it's the last report that counts
     item.reports[rep.when] = rep
 
-    # If class scoped test setup/teardown fail, mark the class to signal this
-    if item.cls is not None:
-        if has_class_scoped_phase_failed(rep):
-            setattr(item.cls, f"cls_{rep.when}_failed", True)
+    # If class scoped test setup/teardown fails, tag the class to signal that it happened
+    if item.cls is not None and rep.when != "call":
+        setattr(item.cls, f"cls_{rep.when}_failed", has_class_scoped_phase_failed(rep))
 
 
 def has_class_scoped_phase_failed(report: TestReport) -> bool:
