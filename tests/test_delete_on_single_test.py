@@ -1,5 +1,60 @@
 import pytest
 
+
+def test_the_path_list_parser_should_correctly_parse_all_accepted_input(request):
+    """The path list parser should correctly parse all accepted input"""
+    from pytest_vcr_delete_on_fail.main import parse_path_list
+    from _pytest.python import Function
+    from typing import Union, List
+
+    def func_a(node: Function) -> Union[str, None, List[str]]:
+        return f"{node.name}_a"
+
+    def func_b(node: Function) -> Union[str, None, List[str]]:
+        return ["b", f"{node.name}_b", f"{node.name}_c", None, 42]
+
+    def func_c(_: Function) -> Union[str, None, List[str]]:
+        return None
+
+    def func_d(node: Function) -> Union[str, None, List[str]]:
+        return ["c", func_e, f"{node.name}_d"]
+
+    def func_e(_: Function) -> None:
+        raise Exception
+
+    path_list = [
+        "a",
+        "a",
+        "b",
+        ["c", "d", func_e, func_d, func_e],
+        [None, "e", 1, ["f", "g"]],
+        func_a,
+        func_b,
+        func_e,
+        func_c,
+        None,
+    ]
+
+    result = parse_path_list(path_list, request.node)
+
+    expected = {
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        f"{request.node.name}_a",
+        f"{request.node.name}_b",
+        f"{request.node.name}_c",
+        f"{request.node.name}_d",
+    }
+
+    assert isinstance(result, set)
+    assert expected == result
+
+
 # language=python prefix="if True:" # IDE language injection
 fail_on_call_test = """
     import pytest
@@ -331,7 +386,7 @@ class TestWhenDealingWithASingleTest:
             from pytest_vcr_delete_on_fail import get_default_cassette_path
 
             @pytest.mark.vcr
-            @pytest.mark.vcr_delete_on_fail(cassette_path_list=[get_default_cassette_path])
+            @pytest.mark.vcr_delete_on_fail(target=[get_default_cassette_path])
             def test_this():
                 requests.get("{test_url}")
                 assert False
@@ -459,80 +514,6 @@ class TestWhenDealingWithASingleTest:
     #
     #
     #
-    def test_it_should_support_both_a_cassette_list_and_generator(
-        self, add_test_file, default_conftest, test_url, run_tests, get_test_cassettes
-    ):
-        """When dealing with a single test it should support both a cassette list and generator."""
-        # language=python prefix="if True:" # IDE language injection
-        test_source = f"""
-            import pytest
-            import requests
-
-            @pytest.mark.vcr
-            @pytest.mark.order(1)
-            def test_first():
-                requests.get("{test_url}")
-
-            @pytest.mark.vcr
-            @pytest.mark.order(2)
-            def test_second():
-                requests.get("{test_url}")
-
-            def generate_one(test_name: str):
-                def wrapped(item):
-                    return f"cassettes/{{item.fspath.purebasename}}/{{test_name}}.yaml"
-                return wrapped
-            
-            @pytest.mark.vcr_delete_on_fail(
-                cassette_path_list=[generate_one("test_first")],
-                cassette_path_func=generate_one("test_second"))
-            @pytest.mark.order(3)
-            def test_third():
-                assert False
-            """
-        test = add_test_file(test_source)
-        assert run_tests().outcomes_are(failed=1, passed=2)
-        assert not get_test_cassettes(test)
-
-    #
-    #
-    #
-    def test_it_should_support_generator_that_returns_lists(
-        self, add_test_file, default_conftest, test_url, run_tests, get_test_cassettes
-    ):
-        """When dealing with a single test it should support generator that returns lists."""
-        # language=python prefix="if True:" # IDE language injection
-        test_source = f"""
-            import pytest
-            import requests
-
-            @pytest.mark.vcr
-            @pytest.mark.order(1)
-            def test_first():
-                requests.get("{test_url}")
-
-            @pytest.mark.vcr
-            @pytest.mark.order(2)
-            def test_second():
-                requests.get("{test_url}")
-
-            def generate_more(test_name_list):
-                def wrapped(item):
-                    return list(map(lambda x: f"cassettes/{{item.fspath.purebasename}}/{{x}}.yaml", test_name_list))
-                return wrapped
-            
-            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_more(["test_first", "test_second"]))
-            @pytest.mark.order(3)
-            def test_third():
-                assert False
-            """
-        test = add_test_file(test_source)
-        assert run_tests().outcomes_are(failed=1, passed=2)
-        assert not get_test_cassettes(test)
-
-    #
-    #
-    #
     def test_it_should_accept_several_marker_with_a_cassette_path_function(
         self, add_test_file, default_conftest, test_url, run_tests, get_test_cassettes
     ):
@@ -557,8 +538,8 @@ class TestWhenDealingWithASingleTest:
                     return f"cassettes/{{item.fspath.purebasename}}/{{test_name}}.yaml"
                 return wrapped
             
-            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_one("test_first"))
-            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_one("test_second"))
+            @pytest.mark.vcr_delete_on_fail([generate_one("test_first")])
+            @pytest.mark.vcr_delete_on_fail([generate_one("test_second")])
             @pytest.mark.order(3)
             def test_third():
                 assert False
@@ -567,40 +548,112 @@ class TestWhenDealingWithASingleTest:
         assert run_tests().outcomes_are(failed=1, passed=2)
         assert not get_test_cassettes(test)
 
-    #
-    #
-    #
-    def test_it_should_not_break_with_a_faulty_cassette_path_func(
-        self, add_test_file, default_conftest, test_url, run_tests, get_test_cassettes
+    def test_a_function_that_returns_a_list_should_be_an_acceptable_cassette_path_list_element(
+        self, add_test_file, test_url, run_tests, is_file
     ):
-        """When dealing with a single test it should not break with a faulty cassette path func."""
-        # noinspection PyUnusedLocal
+        """When dealing with a single test a function that returns a list should be an acceptable
+        cassette_path_list element."""
+
         # language=python prefix="if True:" # IDE language injection
         test_source = f"""
             import pytest
             import requests
+            import vcr
+            from typing import List
 
-            @pytest.mark.vcr
-            @pytest.mark.order(1)
-            def test_first():
-                requests.get("{test_url}")
-                
-            def generate_broken(test_name: str):
-                def wrapped(item):
-                    raise Exception("nope")
-                return wrapped
-
-            def generate_one(test_name: str):
-                def wrapped(item):
-                    return f"cassettes/{{item.fspath.purebasename}}/{{test_name}}.yaml"
-                return wrapped
+            my_vcr = vcr.VCR(record_mode="once")
             
-            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_broken("test_first"))
-            @pytest.mark.vcr_delete_on_fail(cassette_path_func=generate_one("test_first"))
-            @pytest.mark.order(2)
-            def test_second():
+            def get_cassette(name: str, salt: str) -> str:
+                return f"cassettes/{{name}}_{{salt}}.yaml"
+            
+            def delete_all(node) -> List[str]:
+                return [get_cassette(node.name, "a"), get_cassette(node.name, "b")]
+            
+            @pytest.mark.vcr_delete_on_fail([delete_all])
+            def test_this(request):
+                with my_vcr.use_cassette(get_cassette(request.node.name, "a")):
+                    requests.get("{test_url}")
+                with my_vcr.use_cassette(get_cassette(request.node.name, "b")):
+                    requests.get("{test_url}")
                 assert False
             """
-        test = add_test_file(test_source)
-        assert run_tests().outcomes_are(failed=1, passed=1, errors=0)
+        add_test_file(test_source, connect_debugger=False)
+
+        assert run_tests().outcomes_are(failed=1)
+        assert not is_file(f"cassettes/test_this_a.yaml")
+        assert not is_file(f"cassettes/test_this_b.yaml")
+
+    def test_it_should_be_possible_to_use_a_single_string_as_first_argument(
+        self, add_test_file, test_url, run_tests, is_file
+    ):
+        """When dealing with a single test it should be possible to use a single string as first argument."""
+        cassette_a = "cassettes/custom_a.yaml"
+        cassette_b = "cassettes/custom_b.yaml"
+
+        # language=python prefix="if True:" # IDE language injection
+        test_source = f"""
+            import pytest
+            import requests
+            import vcr
+
+            my_vcr = vcr.VCR(record_mode="once")
+            
+            cassette_a = "{cassette_a}"
+            cassette_b = "{cassette_b}"
+            
+            @pytest.mark.vcr_delete_on_fail(cassette_a)
+            @pytest.mark.vcr_delete_on_fail(cassette_b)
+            def test_this():
+                with my_vcr.use_cassette(cassette_a):
+                    requests.get("{test_url}")
+                with my_vcr.use_cassette(cassette_b):
+                    requests.get("{test_url}")
+                assert False  # intentional fail
+            """
+
+        add_test_file(test_source)
+
+        result = run_tests()
+        assert result.outcomes_are(failed=1)
+        assert result.has_fail_with_comment("intentional fail")
+        assert not is_file(cassette_a)
+        assert not is_file(cassette_b)
+
+    def test_it_should_be_possible_to_use_directly_as_function_as_first_argument(
+        self, add_test_file, test_url, run_tests, is_file, get_test_cassettes
+    ):
+        """When dealing with a single test it should be possible to use directly as function as first argument."""
+        cassette_a = "cassettes/custom_a.yaml"
+
+        # language=python prefix="if True:" # IDE language injection
+        test_source = f"""
+            import pytest
+            import requests
+            import vcr
+            from pytest_vcr_delete_on_fail import get_default_cassette_path
+
+            my_vcr = vcr.VCR(record_mode="once")
+            
+            def fun_a(_):
+                return "{cassette_a}"
+            
+            # The following syntax WILL NOT WORK
+            # @pytest.mark.vcr_delete_on_fail(fun_a)
+            # docs: https://doc.pytest.org/en/latest/example/markers.html#passing-a-callable-to-custom-markers
+            @pytest.mark.vcr_delete_on_fail(target=fun_a)
+            @pytest.mark.vcr_delete_on_fail.with_args(get_default_cassette_path)
+            def test_this(request):
+                with my_vcr.use_cassette("{cassette_a}"):
+                    requests.get("{test_url}")
+                with my_vcr.use_cassette(get_default_cassette_path(request.node)):
+                    requests.get("{test_url}")
+                assert False  # intentional fail
+            """
+
+        test = add_test_file(test_source, connect_debugger=False)
+
+        result = run_tests()
+        assert result.outcomes_are(failed=1)
+        assert result.has_fail_with_comment("intentional fail")
+        assert not is_file(cassette_a)
         assert not get_test_cassettes(test)

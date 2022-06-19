@@ -110,7 +110,7 @@ def test_it_can_integrate_with_the_class_setup_workflow(
             # otherwise return None
             
         # This marker is responsible for the deletion of the setup cassette on fail
-        delete_setup_on_fail = pytest.mark.vcr_delete_on_fail(cassette_path_func=get_class_setup_cassette_if_failed)
+        delete_setup_on_fail = pytest.mark.vcr_delete_on_fail([get_class_setup_cassette_if_failed])
 
         @pytest.mark.vcr
         @delete_setup_on_fail
@@ -182,7 +182,7 @@ def test_it_integrates_with_the_class_teardown_workflow(
             # otherwise return None
             
         # This marker is responsible for the deletion of the teardown cassette on fail
-        delete_teardown_on_fail = pytest.mark.vcr_delete_on_fail(cassette_path_func=get_class_teardown_cassette_if_failed)
+        delete_teardown_on_fail = pytest.mark.vcr_delete_on_fail([get_class_teardown_cassette_if_failed])
 
         @pytest.mark.vcr
         @pytest.mark.vcr_delete_on_fail  # this will delete the test cassette
@@ -243,6 +243,8 @@ def test_it_should_support_setup_logic_via_our_context_manager(
             return _wrapped
 
         class TestATestCollection:
+            
+            code: int
 
             @pytest.fixture(scope="class", autouse=True)
             def setup(self, request, vcr_and_dof_setup):
@@ -251,7 +253,7 @@ def test_it_should_support_setup_logic_via_our_context_manager(
                 ):
                     # Everything in here will be recorded on the setup cassette
                     # Any exception will immediately delete the cassette
-                    request.cls.value = requests.get("{test_url}")
+                    request.cls.code = requests.get("{test_url}").status_code
                     raise Exception
                 # Do note that this yield should be outside the vcr_and_dof_setup block, otherwise every network
                 # request performed by this class tests will be recorded in the setup cassette. Also, every exception
@@ -260,7 +262,7 @@ def test_it_should_support_setup_logic_via_our_context_manager(
 
             def test_failing_at_class_setup(self):
                 # This won't play, since it will fail at setup time
-                assert self.value.status_code == 200
+                assert self.code == 200
         """
     test = add_test_file(test_source)
 

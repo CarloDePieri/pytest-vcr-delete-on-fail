@@ -3,7 +3,7 @@ import pytest
 import re
 
 from contextlib import contextmanager
-from typing import Optional, Set, Dict, Any, List, Union, Callable, Generator
+from typing import Optional, Set, Dict, Any, List, Union, Callable, Generator, TypeVar
 from vcr.config import VCR
 
 from _pytest.mark import Mark
@@ -13,8 +13,7 @@ from _pytest.python import Function
 from _pytest.config import Config
 
 marker_name = "vcr_delete_on_fail"
-cassette_path_list_str = "cassette_path_list"
-cassette_path_func_str = "cassette_path_func"
+target_str = "target"
 delete_default_str = "delete_default"
 skip_str = "skip"
 
@@ -152,58 +151,82 @@ def parse_marker_arguments(mark: Mark) -> Dict[str, Any]:
     arguments: Dict[str, Any] = dict(
         mark.kwargs
     )  # mark.kwargs is a Mapping, it's not supposed to be changed directly, so this is needed
-    if cassette_path_list_str not in arguments and len(mark.args) > 0:
-        # use the first unnamed argument as cassette_path_list
-        arguments[cassette_path_list_str] = mark.args[0]
+    if target_str not in arguments and len(mark.args) > 0:
+        # use the first unnamed argument as target
+        arguments[target_str] = mark.args[0]
     return arguments
 
 
 def should_skip_the_test(args: Dict[str, Any]) -> bool:
-    """Return True if the test should skip cassette deletion. This is caused by a cassette_path_list explicitly set to
+    """Return True if the test should skip cassette deletion. This is caused by a target explicitly set to
     None or by a skip=True argument."""
-    return (
-        cassette_path_list_str in args and args[cassette_path_list_str] is None
-    ) or args.get(skip_str, False)
+    return (target_str in args and args[target_str] is None) or args.get(
+        skip_str, False
+    )
 
 
 def should_delete_default_cassette(args: Dict[str, Any]) -> bool:
     """Return True if the default cassette should be deleted. This is caused by a delete_default=True argument or by
-    not expressing cassette_path_list (either as named or unnamed arguments)."""
-    return args.get(delete_default_str, False) or cassette_path_list_str not in args
+    not expressing target (either as named or unnamed arguments)."""
+    return args.get(delete_default_str, False) or target_str not in args
 
 
-def _parse_path_list(
-    path_list: List[Union[str, Callable[[Function], str]]], item: Function
+# This is what a valid path_list looks like.
+#
+# It's a recursive definition: it can be None, a string, a list of ValidPathList or a function that
+# returns ValidPathList.
+#
+# Essentially, there can be infinitely nested lists/functions: the generator below will extract all string found in the
+# nested structure. Everything else will be silently discarded.
+# None remains a valid value because functions may decide at runtime to not delete a cassette.
+#
+ValidPathList = TypeVar(
+    "ValidPathList",
+    None,
+    str,
+    List["ValidPathList"],  # type: ignore[misc]
+    Callable[[Function], "ValidPathList"],  # type: ignore[misc]
+)
+
+
+def string_from_path_list_generator(
+    element: Union[Any, ValidPathList], item: Function
+) -> Generator[str, None, None]:
+    """Recurse through the `element` nested structure and extract all string, ignoring everything else.
+
+    `element` is passed in from the user, so it's Any. The accepted type though (the one that will actually produce
+    strings) is defined as:
+
+    ValidPathList = TypeVar(
+        "ValidPathList",
+        None,
+        str,
+        List["ValidPathList"],
+        Callable[[Function], "ValidPathList"],
+    )
+    """
+    if isinstance(element, str):
+        # only strings actually get yielded from this generator
+        yield element
+    elif isinstance(element, list):
+        for sub_element in element:
+            # for every element of the list, recursively yield from
+            yield from string_from_path_list_generator(sub_element, item)
+    elif callable(element):
+        try:
+            # with the result from the call of the function, recursively yield from
+            yield from string_from_path_list_generator(element(item), item)
+        except (Exception,):
+            pass
+    # if something reaches this point is not a ValidPathList, so it's discarded
+
+
+def parse_path_list(
+    path_list: Union[Any, ValidPathList],
+    item: Function,
 ) -> Set[str]:
     """Parse the path list and return a set of cassette paths."""
-    cassettes = set()
-    for cassette in path_list:
-        if callable(cassette):
-            try:
-                cassette = cassette(item)
-            except (Exception,):
-                pass
-        if isinstance(cassette, str):
-            cassettes.add(cassette)
-    return cassettes
-
-
-def _parse_path_func(
-    path_func: Callable[[Function], Union[List[str], str]], item: Function
-) -> Set[str]:
-    """Run the path function and return a set of resulting cassette paths."""
-    cassettes = set()
-    try:
-        generated = path_func(item)
-        if isinstance(generated, list):
-            for cassette in generated:
-                if isinstance(cassette, str):
-                    cassettes.add(cassette)
-        elif isinstance(generated, str):
-            cassettes.add(generated)
-    except (Exception,):
-        pass
-    return cassettes
+    return set(string_from_path_list_generator(path_list, item))
 
 
 def get_cassettes(args: Dict[str, Any], item: Function) -> Set[str]:
@@ -213,19 +236,9 @@ def get_cassettes(args: Dict[str, Any], item: Function) -> Set[str]:
     if should_delete_default_cassette(args):
         cassettes.add(get_default_cassette_path(item))
 
-    if cassette_path_list_str in args and isinstance(
-        args[cassette_path_list_str], list
-    ):
-        # The user specified cassette_path_list, and it's really a list
-        cassettes = cassettes.union(
-            _parse_path_list(args[cassette_path_list_str], item)
-        )
-
-    if cassette_path_func_str in args and callable(args[cassette_path_func_str]):
-        # The user specified a path function
-        cassettes = cassettes.union(
-            _parse_path_func(args[cassette_path_func_str], item)
-        )
+    if target_str in args:
+        path_list = args[target_str]
+        cassettes = cassettes.union(parse_path_list(path_list, item))
 
     return cassettes
 
@@ -233,28 +246,27 @@ def get_cassettes(args: Dict[str, Any], item: Function) -> Set[str]:
 def pytest_configure(config: Config) -> None:
     config.addinivalue_line(
         "markers",
-        f"{marker_name}({cassette_path_list_str}, {delete_default_str}, {skip_str}, {cassette_path_func_str}"
-        f"): the cassette that will be deleted on text failure. {cassette_path_list_str}: Optional[List["
-        f"Union[str, Callable[[Function], str]]]] is a list of strings or functions that determines which"
-        f" cassettes will be deleted; {cassette_path_func_str}: Optional[Callable[[Function], Union[List[str],"
-        f" str]]] can express cassette paths as well. In both cases, the Function object is a pytest nodes.Function."
-        f" If no argument is passed to the marker the cassette will be determined automatically. If the"
-        f" argument {delete_default_str}=True is used, the automatically determined cassette will be deleted"
-        f" even when providing a {cassette_path_list_str}. If the argument {skip_str}=True is used or a None"
-        f" {cassette_path_list_str} is provided, no cassette will be deleted at all. This marker can be"
-        f" used multiple times.",
+        f"{marker_name}({target_str}, {delete_default_str}, {skip_str}"
+        f"): the cassette(s) to delete on text failure. {target_str}: T = TypeVar('T', None, str,"
+        f" List[T], Callable[[Function], T]) is a possibly nested structure of lists and functions from which all str"
+        f" will be extracted and treated as paths of cassettes to delete; the Function argument received by these"
+        f" functions is a _pytest.python.Function. If no argument is passed to the marker the cassette will be"
+        f" determined automatically. If the argument {delete_default_str}=True is used, the automatically determined"
+        f" cassette will be deleted even when providing a {target_str}. If the argument {skip_str}=True"
+        f" is used or a None {target_str} is provided, no cassette will be deleted at all. This marker"
+        f" can be used multiple times.",
     )
 
 
 @contextmanager
 def delete_on_fail(
-    cassettes: List[str], skip: bool = False
+    cassettes: Optional[List[str]], skip: bool = False
 ) -> Generator[None, None, None]:
     """Context manager that will delete the specified cassette(s) if an exception is raised."""
     try:
         yield
     except (Exception,) as e:
-        if not skip:
+        if not skip and cassettes:
             for cassette in cassettes:
                 if isinstance(cassette, str):
                     delete_cassette(cassette)
@@ -267,7 +279,7 @@ def vcr_and_dof(
     cassette: str,
     skip_delete: bool = False,
     additional_delete: Optional[List[str]] = None,
-    **kwargs: Dict[str, Any],
+    **kwargs: Any,  # these are options passed on to use_cassette
 ) -> Generator[None, None, None]:
     """Context manager that acts as a wrapper for VCR.use_cassette and delete_on_fail: it allows to record
     cassettes that will be deleted on failure."""

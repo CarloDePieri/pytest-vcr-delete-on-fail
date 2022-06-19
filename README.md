@@ -101,7 +101,7 @@ otherwise. If `True` the cassette with the automatically computed path will be d
 ###### skip
 
 Only valid as named argument. It's `False` by default. If `True` no cassette will be deleted for that test. It's
-equivalent to passing `cassette_path_list=None`.
+equivalent to passing `target=None`.
 
 ###### cassette_path_func
 

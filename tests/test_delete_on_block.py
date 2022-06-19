@@ -1,6 +1,3 @@
-import pytest
-
-
 class TestADoFContextBlock:
     """Test: A DoF context block..."""
 
@@ -172,6 +169,7 @@ class TestAVcrAndDofContextManager:
                 with vcr_and_dof(
                     my_vcr, "{custom_cassette}", filter_query_parameters=["api_key"]
                 ):
+                    # noinspection SpellCheckingInspection
                     requests.get("{test_url}?api_key=secretstring")
             """
 
@@ -182,6 +180,7 @@ class TestAVcrAndDofContextManager:
         assert is_file(custom_cassette)
         out = pytester.run("cat", custom_cassette)
         for line in out.outlines:
+            # noinspection SpellCheckingInspection
             assert "secretstring" not in line
 
     def test_should_delete_the_cassette_on_fail(
