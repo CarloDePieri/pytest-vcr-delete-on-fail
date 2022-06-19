@@ -55,6 +55,34 @@ def test_the_path_list_parser_should_correctly_parse_all_accepted_input(request)
     assert expected == result
 
 
+def test_the_valid_target_type_should_be_public(
+    add_test_file, default_conftest, test_url, run_tests, is_file
+):
+    """The ValidTarget type should be public"""
+    # noinspection PyUnusedLocal
+    # language=python prefix="if True:" # IDE language injection
+    test_source = f"""
+        import pytest
+        import requests
+        from _pytest.python import Function
+        from pytest_vcr_delete_on_fail import ValidTarget
+        
+        def get_cassette(item: Function) -> ValidTarget:
+            return "a.yaml"
+        
+        @pytest.mark.vcr_delete_on_fail.with_args(get_cassette)
+        def test_this():
+            requests.get("{test_url}")
+            assert False  # Intentional fail
+        """
+    add_test_file(test_source)
+    result = run_tests()
+
+    assert result.outcomes_are(failed=1)
+    assert result.has_fail_with_comment("Intentional fail")
+    assert not is_file("a.yaml")
+
+
 # language=python prefix="if True:" # IDE language injection
 fail_on_call_test = """
     import pytest
