@@ -171,38 +171,38 @@ def should_delete_default_cassette(args: Dict[str, Any]) -> bool:
     return args.get(delete_default_str, False) or target_str not in args
 
 
-# This is what a valid path_list looks like.
+# This is what a valid target looks like.
 #
-# It's a recursive definition: it can be None, a string, a list of ValidPathList or a function that
-# returns ValidPathList.
+# It's a recursive definition: it can be None, a string, a list of ValidTarget or a function that
+# returns ValidTarget.
 #
 # Essentially, there can be infinitely nested lists/functions: the generator below will extract all string found in the
 # nested structure. Everything else will be silently discarded.
 # None remains a valid value because functions may decide at runtime to not delete a cassette.
 #
-ValidPathList = TypeVar(
-    "ValidPathList",
+ValidTarget = TypeVar(
+    "ValidTarget",
     None,
     str,
-    List["ValidPathList"],  # type: ignore[misc]
-    Callable[[Function], "ValidPathList"],  # type: ignore[misc]
+    List["ValidTarget"],  # type: ignore[misc]
+    Callable[[Function], "ValidTarget"],  # type: ignore[misc]
 )
 
 
-def string_from_path_list_generator(
-    element: Union[Any, ValidPathList], item: Function
+def string_from_target_generator(
+    element: Union[Any, ValidTarget], item: Function
 ) -> Generator[str, None, None]:
     """Recurse through the `element` nested structure and extract all string, ignoring everything else.
 
     `element` is passed in from the user, so it's Any. The accepted type though (the one that will actually produce
     strings) is defined as:
 
-    ValidPathList = TypeVar(
-        "ValidPathList",
+    ValidTarget = TypeVar(
+        "ValidTarget",
         None,
         str,
-        List["ValidPathList"],
-        Callable[[Function], "ValidPathList"],
+        List["ValidTarget"],
+        Callable[[Function], "ValidTarget"],
     )
     """
     if isinstance(element, str):
@@ -211,22 +211,22 @@ def string_from_path_list_generator(
     elif isinstance(element, list):
         for sub_element in element:
             # for every element of the list, recursively yield from
-            yield from string_from_path_list_generator(sub_element, item)
+            yield from string_from_target_generator(sub_element, item)
     elif callable(element):
         try:
             # with the result from the call of the function, recursively yield from
-            yield from string_from_path_list_generator(element(item), item)
+            yield from string_from_target_generator(element(item), item)
         except (Exception,):
             pass
-    # if something reaches this point is not a ValidPathList, so it's discarded
+    # if something reaches this point is not a ValidTarget, so it's discarded
 
 
-def parse_path_list(
-    path_list: Union[Any, ValidPathList],
+def parse_target(
+    target: Union[Any, ValidTarget],
     item: Function,
 ) -> Set[str]:
-    """Parse the path list and return a set of cassette paths."""
-    return set(string_from_path_list_generator(path_list, item))
+    """Parse the target and return a set of cassette paths."""
+    return set(string_from_target_generator(target, item))
 
 
 def get_cassettes(args: Dict[str, Any], item: Function) -> Set[str]:
@@ -237,8 +237,8 @@ def get_cassettes(args: Dict[str, Any], item: Function) -> Set[str]:
         cassettes.add(get_default_cassette_path(item))
 
     if target_str in args:
-        path_list = args[target_str]
-        cassettes = cassettes.union(parse_path_list(path_list, item))
+        target = args[target_str]
+        cassettes = cassettes.union(parse_target(target, item))
 
     return cassettes
 

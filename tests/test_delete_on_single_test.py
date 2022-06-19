@@ -3,7 +3,7 @@ import pytest
 
 def test_the_path_list_parser_should_correctly_parse_all_accepted_input(request):
     """The path list parser should correctly parse all accepted input"""
-    from pytest_vcr_delete_on_fail.main import parse_path_list
+    from pytest_vcr_delete_on_fail.main import parse_target
     from _pytest.python import Function
     from typing import Union, List
 
@@ -35,7 +35,7 @@ def test_the_path_list_parser_should_correctly_parse_all_accepted_input(request)
         None,
     ]
 
-    result = parse_path_list(path_list, request.node)
+    result = parse_target(path_list, request.node)
 
     expected = {
         "a",
