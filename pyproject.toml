@@ -9,7 +9,7 @@ authors = [
   "Carlo De Pieri <depieri.carlo@gmail.com>"
 ]
 
-readme = 'README.md'
+readme = 'README.rst'
 
 repository = "https://github.com/CarloDePieri/pytest-vcr-delete-on-fail"
 homepage = "https://github.com/CarloDePieri/pytest-vcr-delete-on-fail"
