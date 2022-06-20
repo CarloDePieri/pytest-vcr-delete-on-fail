@@ -13,6 +13,7 @@ readme = 'README.rst'
 
 repository = "https://github.com/CarloDePieri/pytest-vcr-delete-on-fail"
 homepage = "https://github.com/CarloDePieri/pytest-vcr-delete-on-fail"
+documentation = "https://carlodepieri.github.io/pytest-vcr-delete-on-fail"
 
 packages = [
   { include = "pytest_vcr_delete_on_fail" }
