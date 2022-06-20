@@ -10,3 +10,5 @@ coverage
 dist
 .scannerwork/
 test-pytester-temp
+/docs/build
+.mypy_cache

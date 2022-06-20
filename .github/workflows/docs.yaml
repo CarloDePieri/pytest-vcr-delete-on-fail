@@ -1,0 +1,55 @@
+---
+name: "Deploy docs on GitHub Pages"
+
+on: 
+
+  push:
+    branches:
+      - "main"
+
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: "Log level"
+        required: true
+        default: "warning"
+
+jobs:
+
+  docs:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.10.x'
+
+      - name: Install sphinx and rtd-theme
+        run: |
+          pip install -U Sphinx sphinx-rtd-theme
+
+      - name: Build docs
+        run: |
+          cd docs
+          make html
+
+      - name: Commit documentation changes
+        run: |
+          git clone https://github.com/CarloDePieri/test-workflow.git --branch gh-pages --single-branch gh-pages
+          cp -r docs/build/html/* gh-pages/
+          cd gh-pages
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Update documentation" -a || true
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: gh-pages
+          directory: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}

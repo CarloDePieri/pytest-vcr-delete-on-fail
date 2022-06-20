@@ -190,6 +190,37 @@ def sonar(c, no_branch=False):
 
 
 #
+# Docs
+#
+@task()
+def docs_build(c):
+    c.run("cd docs; make html")
+    print("\n>> Docs built!\n")
+
+
+@task()
+def docs_clean(c):
+    c.run("cd docs; make clean")
+    print("\n>> Docs cleaned!\n")
+
+
+@task(docs_clean, docs_build)
+def docs_serve(c):
+    from livereload import Server
+
+    port = 5500
+    server = Server()
+    print(">> Serving and watching for changes...\n")
+    # Open the docs in the browser
+    c.run(f"xdg-open 'http://localhost:{port}'")
+    # Watch for changes in rst files; rebuild the html documentation when it happens
+    server.watch("README.rst", lambda: docs_build(c))
+    server.watch("docs/source/*.rst", lambda: docs_build(c))
+    # Serve the builded docs. This will autoreload on change!
+    server.serve(root="docs/build/html", port=port)
+
+
+#
 # ACT
 #
 act_dev_ctx = "act-dev-ci"
