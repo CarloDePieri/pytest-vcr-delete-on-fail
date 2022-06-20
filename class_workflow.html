@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Class setup/teardown workflow &mdash; pytest-vcr-delete-on-fail 2.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Integrations" href="integration.html" />
+    <link rel="prev" title="Context Managers" href="context_managers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> pytest-vcr-delete-on-fail
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="marker.html">Pytest Marker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context_managers.html">Context Managers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Other Examples</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Class setup/teardown workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#vcr-delete-on-fail">vcr_delete_on_fail</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#vcr-and-dof">vcr_and_dof</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Integrations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Docs</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pytest-vcr-delete-on-fail</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Class setup/teardown workflow</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/class_workflow.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="class-setup-teardown-workflow">
+<h1>Class setup/teardown workflow<a class="headerlink" href="#class-setup-teardown-workflow" title="Permalink to this heading"></a></h1>
+<p>Handling cassettes recording and deletion on failure inside class scoped setup / teardown is an often needed feature
+but not immediate to implement (internally pytest treats <em>function scoped</em> and <em>class scoped</em> failures slightly
+differently).</p>
+<p>These are two viable different implementations, base respectively on <a class="reference internal" href="api.html#id0" title="pytest.mark.vcr_delete_on_fail"><code class="xref py py-func docutils literal notranslate"><span class="pre">pytest.mark.vcr_delete_on_fail()</span></code></a> and on
+<a class="reference internal" href="api.html#pytest_vcr_delete_on_fail.vcr_and_dof" title="pytest_vcr_delete_on_fail.vcr_and_dof"><code class="xref py py-func docutils literal notranslate"><span class="pre">vcr_and_dof()</span></code></a>.</p>
+<section id="vcr-delete-on-fail">
+<h2>vcr_delete_on_fail<a class="headerlink" href="#vcr-delete-on-fail" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">vcr</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">pytest_vcr_delete_on_fail</span> <span class="kn">import</span> <span class="n">has_class_scoped_setup_failed</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+
+<span class="k">def</span> <span class="nf">get_setup_cassette_path</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="c1"># determine the class setup cassette path from the node</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.__setup__.yaml&quot;</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;cassettes&quot;</span> <span class="o">/</span> <span class="n">node</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">stem</span> <span class="o">/</span> <span class="n">name</span><span class="p">))</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;class&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">vcr_setup</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="c1"># This fixture returns a context manager that records network</span>
+    <span class="c1"># requests to a class setup cassette</span>
+    <span class="n">cassette_path</span> <span class="o">=</span> <span class="n">get_setup_cassette_path</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">node</span><span class="p">)</span>
+    <span class="n">setup_vcr</span> <span class="o">=</span> <span class="n">vcr</span><span class="o">.</span><span class="n">VCR</span><span class="p">(</span><span class="n">record_mode</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;once&quot;</span><span class="p">])</span>
+
+    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">_wrapped</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">setup_vcr</span><span class="o">.</span><span class="n">use_cassette</span><span class="p">(</span><span class="n">cassette_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">as</span> <span class="n">v</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">v</span>
+
+    <span class="k">return</span> <span class="n">_wrapped</span>
+
+
+<span class="k">def</span> <span class="nf">get_class_setup_cassette_if_failed</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="c1"># check if the class has been flagged with a failed class setup, after the test has run</span>
+    <span class="k">if</span> <span class="n">has_class_scoped_setup_failed</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+        <span class="c1"># return the class setup cassette path; this could, if needed, return a list of</span>
+        <span class="c1"># all class cassettes</span>
+        <span class="k">return</span> <span class="n">get_setup_cassette_path</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="c1"># otherwise return None</span>
+
+
+<span class="c1"># This marker is responsible for the deletion of the setup cassette on fail</span>
+<span class="n">delete_setup_on_fail</span> <span class="o">=</span> <span class="n">pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr_delete_on_fail</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">get_class_setup_cassette_if_failed</span><span class="p">]</span>
+<span class="p">)</span>
+
+
+<span class="nd">@delete_setup_on_fail</span>
+<span class="k">class</span> <span class="nc">TestATestCollection</span><span class="p">:</span>
+
+    <span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="n">autouse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">vcr_setup</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">vcr_setup</span><span class="p">():</span>
+            <span class="c1"># Everything in here will be recorded on the setup cassette</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">cls</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{test_url}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span>
+        <span class="c1"># Do note that this yield should be outside the vcr_setup block, otherwise</span>
+        <span class="c1"># every network request performed by this class&#39; tests will be recorded</span>
+        <span class="c1"># in the setup cassette</span>
+        <span class="k">yield</span>
+
+    <span class="k">def</span> <span class="nf">test_failing_at_class_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># This won&#39;t even run, since it will fail at setup time</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span>
+</pre></div>
+</div>
+<p>Between the two, this is the more verbose solution. It has the advantage that it can detect a failure in
+a <code class="docutils literal notranslate"><span class="pre">setup</span></code> setup fixture, since it uses <a class="reference internal" href="api.html#id0" title="pytest.mark.vcr_delete_on_fail"><code class="xref py py-func docutils literal notranslate"><span class="pre">pytest.mark.vcr_delete_on_fail()</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The full signature of <a class="reference internal" href="api.html#pytest_vcr_delete_on_fail.has_class_scoped_setup_failed" title="pytest_vcr_delete_on_fail.has_class_scoped_setup_failed"><code class="xref py py-func docutils literal notranslate"><span class="pre">has_class_scoped_setup_failed()</span></code></a> and <a class="reference internal" href="api.html#pytest_vcr_delete_on_fail.has_class_scoped_teardown_failed" title="pytest_vcr_delete_on_fail.has_class_scoped_teardown_failed"><code class="xref py py-func docutils literal notranslate"><span class="pre">has_class_scoped_teardown_failed()</span></code></a>
+can be found in the API Reference.</p>
+</div>
+</section>
+<section id="vcr-and-dof">
+<h2>vcr_and_dof<a class="headerlink" href="#vcr-and-dof" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">vcr</span>
+<span class="kn">from</span> <span class="nn">pytest_vcr_delete_on_fail</span> <span class="kn">import</span> <span class="n">vcr_and_dof</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">my_vcr</span> <span class="o">=</span> <span class="n">vcr</span><span class="o">.</span><span class="n">VCR</span><span class="p">(</span><span class="n">record_mode</span><span class="o">=</span><span class="s2">&quot;once&quot;</span><span class="p">)</span>
+
+<span class="c1"># The following fixture returns a context manager that records network request to a class</span>
+<span class="c1"># setup cassette. It will also delete said cassette if an exception is raised</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;class&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">vcr_and_dof_setup</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">request.node.cls.__name__</span><span class="se">}}</span><span class="s2">.__setup__.yaml&quot;</span>
+    <span class="n">cassette_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+        <span class="n">Path</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;cassettes&quot;</span> <span class="o">/</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">stem</span> <span class="o">/</span> <span class="n">name</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">_wrapped</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">vcr_and_dof</span><span class="p">(</span><span class="n">my_vcr</span><span class="p">,</span> <span class="n">cassette_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">as</span> <span class="n">v</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">v</span>
+
+    <span class="k">return</span> <span class="n">_wrapped</span>
+
+
+<span class="k">class</span> <span class="nc">TestATestCollection</span><span class="p">:</span>
+
+    <span class="n">code</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="n">autouse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">vcr_and_dof_setup</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">vcr_and_dof_setup</span><span class="p">(</span>
+            <span class="c1"># if needed, all class cassettes can be deleted on fail by adding them here</span>
+            <span class="n">additional_cassettes</span><span class="o">=</span><span class="p">[],</span>
+        <span class="p">):</span>
+            <span class="c1"># Everything in here will be recorded on the setup cassette</span>
+            <span class="c1"># Any exception will immediately delete the cassette</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">cls</span><span class="o">.</span><span class="n">code</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{test_url}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">status_code</span>
+            <span class="k">raise</span> <span class="ne">Exception</span>
+        <span class="c1"># Do note that this yield should be outside the vcr_and_dof_setup block, otherwise every</span>
+        <span class="c1"># network request performed by this class tests will be recorded in the setup cassette.</span>
+        <span class="c1"># Also, every exception will trigger the setup cassette deletion</span>
+        <span class="k">yield</span>
+
+    <span class="k">def</span> <span class="nf">test_failing_at_class_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># This won&#39;t even run, since it will fail at setup time</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="mi">200</span>
+</pre></div>
+</div>
+<p>While being more concise and simple, this solution only detect failures inside the <code class="docutils literal notranslate"><span class="pre">vcr_and_dof_setup</span></code>
+context manager.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="context_managers.html" class="btn btn-neutral float-left" title="Context Managers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="integration.html" class="btn btn-neutral float-right" title="Integrations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Carlo De Pieri.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pytest-vcr-delete-on-fail &mdash; pytest-vcr-delete-on-fail 2.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> pytest-vcr-delete-on-fail
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="marker.html">Pytest Marker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context_managers.html">Context Managers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Other Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="class_workflow.html">Class setup/teardown workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Integrations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Docs</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pytest-vcr-delete-on-fail</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>pytest-vcr-delete-on-fail</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/full_readme.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pytest-vcr-delete-on-fail">
+<h1>pytest-vcr-delete-on-fail<a class="headerlink" href="#pytest-vcr-delete-on-fail" title="Permalink to this heading"></a></h1>
+<a class="reference external image-reference" href="https://pypi.org/project/pytest-vcr-delete-on-fail/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pytest-vcr-delete-on-fail" /></a>
+<a class="reference external image-reference" href="https://pypi.org/project/pytest-vcr-delete-on-fail/"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/pytest-vcr-delete-on-fail" /></a>
+<a class="reference external image-reference" href="https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/actions/workflows/prod.yml"><img alt="CI Status" src="https://img.shields.io/github/workflow/status/CarloDePieri/pytest-vcr-delete-on-fail/prod?logo=github" /></a>
+<a class="reference external image-reference" href="https://coveralls.io/github/CarloDePieri/pytest-vcr-delete-on-fail?branch=main"><img alt="Coverage status" src="https://coveralls.io/repos/github/CarloDePieri/pytest-vcr-delete-on-fail/badge.svg?branch=main" /></a>
+<img alt="Sonarqube ratings: A" src="https://img.shields.io/badge/sonarqube%20ratings-A-success" />
+<a class="reference external image-reference" href="https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/blob/main/LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/github/license/CarloDePieri/pytest-vcr-delete-on-fail" /></a>
+<a class="reference external image-reference" href="https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/"><img alt="Maintained!" src="https://img.shields.io/maintenance/yes/2022" /></a>
+<a class="reference external image-reference" href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
+<p>A pytest plugin that automates vcrpy cassettes deletion on test failure.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pip install pytest-vcr-delete-on-fail
+</pre></div>
+</div>
+<p>Then, in your test:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">vcr</span>
+
+<span class="n">my_vcr</span> <span class="o">=</span> <span class="n">vcr</span><span class="o">.</span><span class="n">VCR</span><span class="p">(</span><span class="n">record_mode</span><span class="o">=</span><span class="s2">&quot;once&quot;</span><span class="p">)</span>
+
+<span class="n">cassette_path</span> <span class="o">=</span> <span class="s2">&quot;tests/cassettes/this.yaml&quot;</span>
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr_delete_on_fail</span><span class="p">(</span><span class="n">cassette_path</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_this</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">my_vcr</span><span class="o">.</span><span class="n">use_cassette</span><span class="p">(</span><span class="n">cassette_path</span><span class="p">):</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<p>In this example a cassette will be saved on disk when exiting the <code class="docutils literal notranslate"><span class="pre">use_cassette</span></code> context manager, but since the test
+eventually fails, the cassette will be deleted after the test teardown.</p>
+<section id="rationale">
+<h2>Rationale<a class="headerlink" href="#rationale" title="Permalink to this heading"></a></h2>
+<p>Sometimes when testing a function containing multiple http requests a failure will occur halfway through (this happens
+all the time when doing TDD). When using <a class="reference external" href="https://github.com/kevin1024/vcrpy">vcrpy</a> to cache http requests, this could
+result in a test cache that only cover a fraction of the function under test, which in turn could prevent the function
+to ever succeed or the test to pass in subsequent run if the http requests that didn’t get cached depended on a
+fresh context (maybe they are time sensitive or there’s randomness involved).</p>
+<p>This possibility leads to doubt and lack of trust towards the test suite, which is wrong on too many level.</p>
+<p>This plugin provides tools to solve this uncertainty, by deleting a test http requests cache if it fails, so that it
+can start fresh on the next run.</p>
+<section id="docs">
+<h3>Docs<a class="headerlink" href="#docs" title="Permalink to this heading"></a></h3>
+<p>More information and examples can be found in the in-depth <a class="reference external" href="https://carlodepieri.github.io/pytest-vcr-delete-on-fail">documentation</a>.</p>
+</section>
+<section id="development">
+<h3>Development<a class="headerlink" href="#development" title="Permalink to this heading"></a></h3>
+<p>Install <a class="reference external" href="http://pyinvoke.org/">invoke</a> and <a class="reference external" href="https://python-poetry.org/">poetry</a>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pip install invoke poetry
+</pre></div>
+</div>
+<p>Now clone the git repo:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git clone https://github.com/CarloDePieri/pytest-vcr-delete-on-fail.git
+<span class="gp">$ </span><span class="nb">cd</span> pytest-vcr-delete-on-fail
+<span class="gp">$ </span>inv install
+</pre></div>
+</div>
+<p>This will try to create a virtualenv based on <code class="docutils literal notranslate"><span class="pre">python3.7</span></code> and install there all
+project’s dependencies. If a different python version is preferred, it can be
+selected by specifying  the <code class="docutils literal notranslate"><span class="pre">--python</span></code> (<code class="docutils literal notranslate"><span class="pre">-p</span></code>) flag like this:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>inv install -p python3.8
+</pre></div>
+</div>
+<p>The test suite can be run with commands:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>inv <span class="nb">test</span>         <span class="c1"># run the test suite</span>
+<span class="gp">$ </span>inv test-cov     <span class="c1"># run the tests suite and produce a coverage report</span>
+</pre></div>
+</div>
+<p>To run the test suite against all supported python version (they must be in path!) run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>inv test-all-python-version
+</pre></div>
+</div>
+<p>To test the GitHub workflow with <a class="reference external" href="https://github.com/nektos/act">act</a>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>inv act-dev               <span class="c1"># test the dev workflow</span>
+<span class="gp">$ </span>inv act-dev -c shell      <span class="c1"># open a shell in the act container (the above must fail first!)</span>
+<span class="gp">$ </span>inv act-dev -c clean      <span class="c1"># stop and delete a failed act container</span>
+</pre></div>
+</div>
+<p>To write the documentation with autobuild and livereload launch:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>inv docs-serve
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Carlo De Pieri.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

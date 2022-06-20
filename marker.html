@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pytest Marker &mdash; pytest-vcr-delete-on-fail 2.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Context Managers" href="context_managers.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> pytest-vcr-delete-on-fail
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Pytest Marker</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#automatic-naming">Automatic naming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multiple-cassettes">Multiple cassettes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#delete-cassettes-programmatically">Delete cassettes programmatically</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#skip-cassette-deletion">Skip cassette deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#about-pytest-fixtures">About pytest fixtures</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="context_managers.html">Context Managers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Other Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="class_workflow.html">Class setup/teardown workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Integrations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Docs</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pytest-vcr-delete-on-fail</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Pytest Marker</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/marker.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pytest-marker">
+<h1>Pytest Marker<a class="headerlink" href="#pytest-marker" title="Permalink to this heading"></a></h1>
+<p>The main tool offered by this plugin to delete cassettes on failure is the <a class="reference internal" href="api.html#id0" title="pytest.mark.vcr_delete_on_fail"><code class="xref py py-func docutils literal notranslate"><span class="pre">pytest.mark.vcr_delete_on_fail()</span></code></a>
+decorator.</p>
+<section id="automatic-naming">
+<h2>Automatic naming<a class="headerlink" href="#automatic-naming" title="Permalink to this heading"></a></h2>
+<div class="line-block">
+<div class="line">By default it will target the cassette found at</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">./cassettes/{module-name}/{test-class-if-any.}{test_name}.yaml</span></code></div>
+<div class="line">which is the same policy used by <a class="reference external" href="https://github.com/kiwicom/pytest-recording">pytest-recording</a>:</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+
+<span class="c1"># Configure pytest_recording</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;module&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">vcr_config</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;record_mode&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;once&quot;</span><span class="p">]}</span>
+
+
+<span class="c1"># this will trigger pytest-recording and record a vcr</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr</span>
+<span class="c1"># this will delete that cassette, if the test fails</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr_delete_on_fail</span>
+<span class="c1"># @pytest.mark.vcr_delete_on_fail()  # alternative syntax</span>
+<span class="k">def</span> <span class="nf">test_this</span><span class="p">():</span>
+    <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using the marker decorator, the cassette will be deleted <strong>after</strong> the test teardown phase. This is
+different from how <a class="reference internal" href="context_managers.html"><span class="doc">the context managers</span></a> work.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This marker will delete any cassette found at the given path, even if the test didn’t reach the instruction
+that would have recorded a new cassette in the run that resulted in a failure. This is intended to ensure a fresh
+environment after every failure.</p>
+</div>
+<p>The marker is actually quite flexible and accepts several arguments (the full signature can be found
+in the API Reference: <a class="reference internal" href="api.html#id0" title="pytest.mark.vcr_delete_on_fail"><code class="xref py py-func docutils literal notranslate"><span class="pre">pytest.mark.vcr_delete_on_fail()</span></code></a>).</p>
+</section>
+<section id="multiple-cassettes">
+<h2>Multiple cassettes<a class="headerlink" href="#multiple-cassettes" title="Permalink to this heading"></a></h2>
+<p>More than one cassette can be specified by passing in a list:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_vcr</span> <span class="o">=</span> <span class="n">vcr</span><span class="o">.</span><span class="n">VCR</span><span class="p">(</span><span class="n">record_mode</span><span class="o">=</span><span class="s2">&quot;once&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_cassette_name</span><span class="p">(</span><span class="n">letter</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">letter</span><span class="si">}</span><span class="s2">.yaml&quot;</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr_delete_on_fail</span><span class="p">([</span><span class="s2">&quot;a.yaml&quot;</span><span class="p">,</span> <span class="n">get_cassette_name</span><span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">)])</span>
+<span class="k">def</span> <span class="nf">test_this</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">my_vcr</span><span class="o">.</span><span class="n">use_cassette</span><span class="p">(</span><span class="s2">&quot;a.yaml&quot;</span><span class="p">):</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com&quot;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">my_vcr</span><span class="o">.</span><span class="n">use_cassette</span><span class="p">(</span><span class="n">get_cassette_name</span><span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">)):</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://gitlab.com&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The marker argument list element <code class="docutils literal notranslate"><span class="pre">get_cassette_name(&quot;b&quot;)</span></code> will execute immediately at test collection time and
+will result in a simple string passed as list element.</p>
+</div>
+</section>
+<section id="delete-cassettes-programmatically">
+<h2>Delete cassettes programmatically<a class="headerlink" href="#delete-cassettes-programmatically" title="Permalink to this heading"></a></h2>
+<p>The cassette can also be determined by functions that will run after the test teardown:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">_pytest.python</span> <span class="kn">import</span> <span class="n">Function</span>
+
+<span class="c1"># setup vcr</span>
+<span class="n">my_vcr</span> <span class="o">=</span> <span class="n">vcr</span><span class="o">.</span><span class="n">VCR</span><span class="p">(</span><span class="n">record_mode</span><span class="o">=</span><span class="s2">&quot;once&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_cassette</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">Function</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="c1"># the Function argument is a pytest node that has several information about the test</span>
+    <span class="c1"># and can be used to programmatically build the cassette path</span>
+    <span class="n">test_name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2">.yaml&quot;</span>
+
+
+<span class="c1"># a function can be passed as target as a list element. It will run after the test teardown</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr_delete_on_fail</span><span class="p">([</span><span class="n">get_cassette</span><span class="p">])</span>
+<span class="c1"># @pytest.mark.vcr_delete_on_fail(target=get_cassette)  # alternative syntax</span>
+<span class="c1"># @pytest.mark.vcr_delete_on_fail.with_args(get_cassette)  # alternative syntax</span>
+<span class="k">def</span> <span class="nf">test_this</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="c1"># This node is the same Function instance that &#39;get_cassette&#39; will get as argument later</span>
+    <span class="n">node</span><span class="p">:</span> <span class="n">Function</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">node</span>
+    <span class="n">test_name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">with</span> <span class="n">my_vcr</span><span class="o">.</span><span class="n">use_cassette</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2">.yaml&quot;</span><span class="p">):</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>A function <a class="reference external" href="https://doc.pytest.org/en/latest/example/markers.html#passing-a-callable-to-custom-markers">can’t be passed directly as the only unnamed marker argument</a>. This is why the syntax
+<code class="docutils literal notranslate"><span class="pre">&#64;pytest.mark.vcr_delete_on_fail(get_cassette)</span></code> will not work (and will probably means that the test will not
+even be detected).</p>
+</div>
+<p>Functions and lists can be nested arbitrarily: all <code class="docutils literal notranslate"><span class="pre">str</span></code> will be extracted and treated as paths
+of cassettes to be deleted.</p>
+<p>The correct type for a valid <code class="docutils literal notranslate"><span class="pre">target</span></code> can be found in the Api Reference:
+<a class="reference internal" href="api.html#pytest_vcr_delete_on_fail.ValidTarget" title="pytest_vcr_delete_on_fail.ValidTarget"><code class="xref py py-data docutils literal notranslate"><span class="pre">pytest_vcr_delete_on_fail.ValidTarget</span></code></a>.</p>
+</section>
+<section id="skip-cassette-deletion">
+<h2>Skip cassette deletion<a class="headerlink" href="#skip-cassette-deletion" title="Permalink to this heading"></a></h2>
+<p>It’s possible to selectively skip a cassette deletion, which could come in handy to inspect its content:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># pytest markers propagate to all test in a class</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr_delete_on_fail</span>
+<span class="k">class</span> <span class="nc">TestCollection</span><span class="p">:</span>
+
+    <span class="c1"># this test cassette will be delete, since the test failed</span>
+    <span class="k">def</span> <span class="nf">test_this</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="kc">False</span>
+
+    <span class="c1"># this test cassette will remain on disk despite the test failure</span>
+    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr_delete_on_fail</span><span class="p">(</span><span class="n">skip</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># @pytest.mark.vcr_delete_on_fail(None)  # equivalent to the above</span>
+    <span class="k">def</span> <span class="nf">test_this_as_well</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</section>
+<section id="about-pytest-fixtures">
+<h2>About pytest fixtures<a class="headerlink" href="#about-pytest-fixtures" title="Permalink to this heading"></a></h2>
+<p>Other than in the test itself, this marker detects failures in every setup / teardown pytest function scoped fixtures.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span> <span class="nf">setup_fixture</span><span class="p">():</span>
+    <span class="k">raise</span> <span class="ne">Exception</span>
+    <span class="k">yield</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span> <span class="nf">teardown_fixture</span><span class="p">():</span>
+    <span class="k">yield</span>
+    <span class="k">raise</span> <span class="ne">Exception</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr_delete_on_fail</span>
+<span class="k">def</span> <span class="nf">test_one</span><span class="p">(</span><span class="n">setup_fixture</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr_delete_on_fail</span>
+<span class="k">def</span> <span class="nf">test_two</span><span class="p">(</span><span class="n">teardown_fixture</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span>
+</pre></div>
+</div>
+<p>Both these tests would result in no cassette saved on disk.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="context_managers.html" class="btn btn-neutral float-right" title="Context Managers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Carlo De Pieri.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
