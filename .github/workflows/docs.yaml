@@ -39,7 +39,7 @@ jobs:
 
       - name: Commit documentation changes
         run: |
-          git clone https://github.com/CarloDePieri/test-workflow.git --branch gh-pages --single-branch gh-pages
+          git clone https://github.com/CarloDePieri/pytest-vcr-delete-on-fail.git --branch gh-pages --single-branch gh-pages
           cp -r docs/build/html/* gh-pages/
           cd gh-pages
           git config --local user.email "action@github.com"
