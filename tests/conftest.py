@@ -211,7 +211,7 @@ def _has_fail_with_comment(result: RunResult, comment: str) -> bool:
 
     Used to make sure a test failed with the intended 'assert False'."""
 
-    pattern = re.compile(">( *)assert False( *)#(?P<comment>.*)")
+    pattern = re.compile(">( *)(assert False|raise Exception)( *)#(?P<comment>.*)")
     found = False
     for line in result.outlines:
         match = pattern.match(line)

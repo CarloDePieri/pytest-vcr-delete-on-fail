@@ -54,13 +54,14 @@ def test_it_can_integrate_with_vcrpy_encrypt(
         @vcr_delete_on_fail
         def test_this():
             requests.get("{test_url}")
-            assert False
+            assert False  # intentional
         """
     test = add_test_file(test_source, name="test_enc/test_enc")
 
     result = pytester.runpytest()
 
     assert result.outcomes_are(failed=1)
+    assert result.has_fail_with_comment("intentional")
     assert not get_test_cassettes(test)
 
 
@@ -74,20 +75,18 @@ def test_it_can_integrate_with_the_class_setup_workflow(
     # noinspection PyUnusedLocal
     # language=python prefix="if True:" # IDE language injection
     test_source = f"""
-        import os
         import pytest
         import requests
         import vcr
         from typing import Union
         from pytest_vcr_delete_on_fail import has_class_scoped_setup_failed
         from contextlib import contextmanager
-
+        from pathlib import Path
+        
         def get_setup_cassette_path(node) -> str:
             # determine the class setup cassette path from the node
-            el = node.nodeid.split("::")
-            name = f"{{el[1]}}.__setup__"
-            path = os.path.join(os.path.dirname(el[0]), "cassettes", os.path.basename(el[0]).replace(".py", ""))
-            return f"{{path}}/{{name}}.yaml"
+            name = f"{{node.cls.__name__}}.__setup__.yaml"
+            return str(Path(node.path.parent / "cassettes" / node.path.stem / name))
 
         @pytest.fixture(scope="class")
         def vcr_setup(request):
@@ -112,7 +111,6 @@ def test_it_can_integrate_with_the_class_setup_workflow(
         # This marker is responsible for the deletion of the setup cassette on fail
         delete_setup_on_fail = pytest.mark.vcr_delete_on_fail([get_class_setup_cassette_if_failed])
 
-        @pytest.mark.vcr
         @delete_setup_on_fail
         class TestATestCollection:
 
@@ -121,7 +119,7 @@ def test_it_can_integrate_with_the_class_setup_workflow(
                 with vcr_setup():
                     # Everything in here will be recorded on the setup cassette
                     request.cls.value = requests.get("{test_url}")
-                    raise Exception
+                    raise Exception  # intentional
                 # Do note that this yield should be outside the vcr_setup block, otherwise every network request
                 # performed by this class tests will be recorded in the setup cassette
                 yield
@@ -132,7 +130,9 @@ def test_it_can_integrate_with_the_class_setup_workflow(
         """
     test = add_test_file(test_source)
 
-    assert run_tests().outcomes_are(errors=1)
+    result = run_tests()
+    assert result.outcomes_are(errors=1)
+    assert result.has_fail_with_comment("intentional")
     assert not get_test_cassettes(test)
 
 
@@ -146,20 +146,18 @@ def test_it_integrates_with_the_class_teardown_workflow(
     # noinspection PyUnusedLocal
     # language=python prefix="if True:" # IDE language injection
     test_source = f"""
-        import os
         import pytest
         import requests
         import vcr
         from typing import Union
         from pytest_vcr_delete_on_fail import has_class_scoped_teardown_failed
         from contextlib import contextmanager
-
+        from pathlib import Path
+        
         def get_teardown_cassette_path(node) -> str:
             # determine the class teardown cassette path from the node
-            el = node.nodeid.split("::")
-            name = f"{{el[1]}}.__teardown__"
-            path = os.path.join(os.path.dirname(el[0]), "cassettes", os.path.basename(el[0]).replace(".py", ""))
-            return f"{{path}}/{{name}}.yaml"
+            name = f"{{node.cls.__name__}}.__teardown__.yaml"
+            return str(Path(node.path.parent / "cassettes" / node.path.stem / name))
 
         @pytest.fixture(scope="class")
         def vcr_teardown(request):
@@ -195,7 +193,7 @@ def test_it_integrates_with_the_class_teardown_workflow(
                 with vcr_teardown():
                     # Everything in here will be recorded on the teardown cassette
                     r = requests.get("{test_url}")
-                    raise Exception
+                    raise Exception  # intentional
 
             def test_failing_at_class_teardown(self, request):
                 r = requests.get("{test_url}")
@@ -204,7 +202,9 @@ def test_it_integrates_with_the_class_teardown_workflow(
 
     test = add_test_file(test_source)
 
-    assert run_tests().outcomes_are(errors=1, passed=1)
+    result = run_tests()
+    assert result.outcomes_are(errors=1, passed=1)
+    assert result.has_fail_with_comment("intentional")
     assert not get_test_cassettes(test)
 
 
@@ -220,9 +220,9 @@ def test_it_should_support_setup_logic_via_our_context_manager(
         import pytest
         import requests
         import vcr
-        import os
         from pytest_vcr_delete_on_fail import vcr_and_dof
         from contextlib import contextmanager
+        from pathlib import Path
     
         my_vcr = vcr.VCR(record_mode="once")
 
@@ -230,10 +230,8 @@ def test_it_should_support_setup_logic_via_our_context_manager(
         # It will also delete said cassette if an exception is raised
         @pytest.fixture(scope="class")
         def vcr_and_dof_setup(request):
-            el = request.node.nodeid.split("::")
-            name = f"{{el[1]}}.__setup__"
-            path = os.path.join(os.path.dirname(el[0]), "cassettes", os.path.basename(el[0]).replace(".py", ""))
-            cassette_path = f"{{path}}/{{name}}.yaml"
+            name = f"{{request.node.cls.__name__}}.__setup__.yaml"
+            cassette_path = str(Path(request.node.path.parent / "cassettes" / request.path.stem / name))
                 
             @contextmanager
             def _wrapped(**kwargs):
@@ -255,9 +253,9 @@ def test_it_should_support_setup_logic_via_our_context_manager(
                     # Any exception will immediately delete the cassette
                     request.cls.code = requests.get("{test_url}").status_code
                     raise Exception
-                # Do note that this yield should be outside the vcr_and_dof_setup block, otherwise every network
-                # request performed by this class tests will be recorded in the setup cassette. Also, every exception
-                # will trigger the cassette deletion
+                # Do note that this yield should be outside the vcr_and_dof_setup block, otherwise every
+                # network request performed by this class tests will be recorded in the setup cassette. Also,
+                # every exception will trigger the cassette deletion
                 yield
 
             def test_failing_at_class_setup(self):
