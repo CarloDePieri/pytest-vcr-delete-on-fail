@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pytest Marker &mdash; pytest-vcr-delete-on-fail 2.0.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=51b770b3"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -28,11 +30,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> pytest-vcr-delete-on-fail
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pytest-vcr-delete-on-fail
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -74,8 +80,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Pytest Marker</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Pytest Marker</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/marker.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -86,11 +92,11 @@
            <div itemprop="articleBody">
              
   <section id="pytest-marker">
-<h1>Pytest Marker<a class="headerlink" href="#pytest-marker" title="Permalink to this heading"></a></h1>
+<h1>Pytest Marker<a class="headerlink" href="#pytest-marker" title="Link to this heading"></a></h1>
 <p>The main tool offered by this plugin to delete cassettes on failure is the <a class="reference internal" href="api.html#id0" title="pytest.mark.vcr_delete_on_fail"><code class="xref py py-func docutils literal notranslate"><span class="pre">pytest.mark.vcr_delete_on_fail()</span></code></a>
 decorator.</p>
 <section id="automatic-naming">
-<h2>Automatic naming<a class="headerlink" href="#automatic-naming" title="Permalink to this heading"></a></h2>
+<h2>Automatic naming<a class="headerlink" href="#automatic-naming" title="Link to this heading"></a></h2>
 <div class="line-block">
 <div class="line">By default it will target the cassette found at</div>
 <div class="line"><code class="docutils literal notranslate"><span class="pre">./cassettes/{module-name}/{test-class-if-any.}{test_name}.yaml</span></code></div>
@@ -131,7 +137,7 @@ environment after every failure.</p>
 in the API Reference: <a class="reference internal" href="api.html#id0" title="pytest.mark.vcr_delete_on_fail"><code class="xref py py-func docutils literal notranslate"><span class="pre">pytest.mark.vcr_delete_on_fail()</span></code></a>).</p>
 </section>
 <section id="multiple-cassettes">
-<h2>Multiple cassettes<a class="headerlink" href="#multiple-cassettes" title="Permalink to this heading"></a></h2>
+<h2>Multiple cassettes<a class="headerlink" href="#multiple-cassettes" title="Link to this heading"></a></h2>
 <p>More than one cassette can be specified by passing in a list:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_vcr</span> <span class="o">=</span> <span class="n">vcr</span><span class="o">.</span><span class="n">VCR</span><span class="p">(</span><span class="n">record_mode</span><span class="o">=</span><span class="s2">&quot;once&quot;</span><span class="p">)</span>
 
@@ -156,7 +162,7 @@ will result in a simple string passed as list element.</p>
 </div>
 </section>
 <section id="delete-cassettes-programmatically">
-<h2>Delete cassettes programmatically<a class="headerlink" href="#delete-cassettes-programmatically" title="Permalink to this heading"></a></h2>
+<h2>Delete cassettes programmatically<a class="headerlink" href="#delete-cassettes-programmatically" title="Link to this heading"></a></h2>
 <p>The cassette can also be determined by functions that will run after the test teardown:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">_pytest.python</span> <span class="kn">import</span> <span class="n">Function</span>
 
@@ -196,7 +202,7 @@ of cassettes to be deleted.</p>
 <a class="reference internal" href="api.html#pytest_vcr_delete_on_fail.ValidTarget" title="pytest_vcr_delete_on_fail.ValidTarget"><code class="xref py py-data docutils literal notranslate"><span class="pre">pytest_vcr_delete_on_fail.ValidTarget</span></code></a>.</p>
 </section>
 <section id="skip-cassette-deletion">
-<h2>Skip cassette deletion<a class="headerlink" href="#skip-cassette-deletion" title="Permalink to this heading"></a></h2>
+<h2>Skip cassette deletion<a class="headerlink" href="#skip-cassette-deletion" title="Link to this heading"></a></h2>
 <p>It’s possible to selectively skip a cassette deletion, which could come in handy to inspect its content:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># pytest markers propagate to all test in a class</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr</span>
@@ -218,7 +224,7 @@ of cassettes to be deleted.</p>
 </div>
 </section>
 <section id="about-pytest-fixtures">
-<h2>About pytest fixtures<a class="headerlink" href="#about-pytest-fixtures" title="Permalink to this heading"></a></h2>
+<h2>About pytest fixtures<a class="headerlink" href="#about-pytest-fixtures" title="Link to this heading"></a></h2>
 <p>Other than in the test itself, this marker detects failures in every setup / teardown pytest function scoped fixtures.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pytest</span>
 <span class="kn">import</span> <span class="nn">requests</span>
