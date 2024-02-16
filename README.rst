@@ -8,7 +8,7 @@ pytest-vcr-delete-on-fail
 .. image:: https://img.shields.io/pypi/pyversions/pytest-vcr-delete-on-fail
     :target: https://pypi.org/project/pytest-vcr-delete-on-fail/
     :alt: PyPI - Python Version
-.. image:: https://img.shields.io/github/workflow/status/CarloDePieri/pytest-vcr-delete-on-fail/prod?logo=github
+.. image:: https://img.shields.io/github/actions/workflow/status/CarloDePieri/pytest-vcr-delete-on-fail/prod.yml?branch=main
     :target: https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/actions/workflows/prod.yml
     :alt: CI Status
 .. image:: https://coveralls.io/repos/github/CarloDePieri/pytest-vcr-delete-on-fail/badge.svg?branch=main
@@ -19,7 +19,7 @@ pytest-vcr-delete-on-fail
 .. image:: https://img.shields.io/github/license/CarloDePieri/pytest-vcr-delete-on-fail
     :target: https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/blob/main/LICENSE
     :alt: License: GPL-3.0
-.. image:: https://img.shields.io/maintenance/yes/2022
+.. image:: https://img.shields.io/maintenance/yes/2024
     :target: https://github.com/CarloDePieri/pytest-vcr-delete-on-fail/
     :alt: Maintained!
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
@@ -98,13 +98,13 @@ Now clone the git repo:
     $ cd pytest-vcr-delete-on-fail
     $ inv install
 
-This will try to create a virtualenv based on ``python3.7`` and install there all
+This will try to create a virtualenv based on ``python3.8`` and install there all
 project's dependencies. If a different python version is preferred, it can be
 selected by specifying  the ``--python`` (``-p``) flag like this:
 
 .. code-block:: console
 
-    $ inv install -p python3.8
+    $ inv install -p python3.9
 
 The test suite can be run with commands:
 
