@@ -17,9 +17,9 @@ jobs:
       - name: Checkout.
         uses: actions/checkout@v2
 
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.7.x'
+          python-version: '3.8.x'
 
       - name: Make sure path are there also for act shells.
         if: ${{ env.ACT }}
